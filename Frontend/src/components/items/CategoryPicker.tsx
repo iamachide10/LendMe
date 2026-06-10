@@ -2,7 +2,6 @@ import React from 'react';
 import {ScrollView,TouchableOpacity,Text,StyleSheet,} from 'react-native';
 import { ItemCategory } from '../../types/item.types';
 import { ITEM_CATEGORIES } from '../../utils/constants';
-
 interface Props {
   selected: ItemCategory | undefined;
   onSelect: (category: ItemCategory | undefined) => void;
@@ -46,20 +45,25 @@ const CategoryPicker: React.FC<Props> = ({ selected, onSelect }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-    flexDirection: 'row',
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#16213e',
-    borderWidth: 1,
-    borderColor: '#0f3460',
-  },
+ container: {
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+
+chip: {
+  paddingHorizontal: 16,
+  paddingVertical: 8,
+  marginRight: 8,
+  borderRadius: 20,
+  backgroundColor: '#16213e',
+  borderWidth: 1,
+  borderColor: '#0f3460',
+  minHeight: 36,
+  justifyContent: 'center',
+  flexShrink: 0,
+},
   chipActive: {
     backgroundColor: '#e94560',
     borderColor: '#e94560',

@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: '#e94560',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
   },
 });

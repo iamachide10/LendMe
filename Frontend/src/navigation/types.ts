@@ -23,3 +23,12 @@ export type HomeStackParamList = {
   LeaveReview: { bookingId: string; revieweeId: string; itemId: string };
   ChatScreen: { conversationId: string; otherUserName: string };
 };
+
+export type InboxStackParamList = {
+  InboxScreen: undefined;
+
+  ChatScreen: {
+    conversationId: string;
+    otherUserName: string;
+  };
+};
