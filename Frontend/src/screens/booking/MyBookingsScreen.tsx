@@ -1,16 +1,13 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   Alert,
-  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getMyBookings, cancelBooking } from '../../api/bookingApi';
 import { Booking, BookingStatus } from '../../types/booking.types';
 import { formatDate } from '../../utils/dateHelpers';
 
@@ -24,27 +21,59 @@ const STATUS_COLORS: Record<BookingStatus, string> = {
   CANCELLED: '#e94560',
 };
 
+const FAKE_BOOKINGS: Booking[] = [
+  {
+    id: 'booking-1',
+    itemId: 'item-1',
+    itemTitle: 'Canon EOS 1500D DSLR Camera',
+    borrowerId: '1',
+    borrowerName: 'Test User',
+    startDate: '2026-06-15',
+    endDate: '2026-06-18',
+    totalPrice: 320,
+    status: 'APPROVED',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'booking-2',
+    itemId: 'item-2',
+    itemTitle: 'HP Laptop 15"',
+    borrowerId: '1',
+    borrowerName: 'Test User',
+    startDate: '2026-06-20',
+    endDate: '2026-06-22',
+    totalPrice: 240,
+    status: 'PENDING',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'booking-3',
+    itemId: 'item-3',
+    itemTitle: 'Engineering Textbook Set',
+    borrowerId: '1',
+    borrowerName: 'Test User',
+    startDate: '2026-05-10',
+    endDate: '2026-05-15',
+    totalPrice: 100,
+    status: 'COMPLETED',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'booking-4',
+    itemId: 'item-6',
+    itemTitle: 'Power Drill & Tool Set',
+    borrowerId: '1',
+    borrowerName: 'Test User',
+    startDate: '2026-06-01',
+    endDate: '2026-06-03',
+    totalPrice: 90,
+    status: 'CANCELLED',
+    createdAt: new Date().toISOString(),
+  },
+];
+
 const MyBookingsScreen: React.FC = () => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchBookings = useCallback(async () => {
-    try {
-      const data = await getMyBookings();
-      setBookings(data);
-    } catch {
-      console.error('Failed to fetch bookings');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchBookings();
-    setRefreshing(false);
-  };
+  const [bookings, setBookings] = useState<Booking[]>(FAKE_BOOKINGS);
 
   const handleCancel = (bookingId: string) => {
     Alert.alert(
@@ -55,26 +84,17 @@ const MyBookingsScreen: React.FC = () => {
         {
           text: 'Yes, Cancel',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await cancelBooking(bookingId);
-              setBookings(prev =>
-                prev.map(b =>
-                  b.id === bookingId ? { ...b, status: 'CANCELLED' } : b
-                )
-              );
-            } catch {
-              Alert.alert('Error', 'Failed to cancel booking');
-            }
+          onPress: () => {
+            setBookings(prev =>
+              prev.map(b =>
+                b.id === bookingId ? { ...b, status: 'CANCELLED' } : b
+              )
+            );
           },
         },
       ]
     );
   };
-
-  useEffect(() => {
-    fetchBookings();
-  }, []);
 
   const renderItem = ({ item }: { item: Booking }) => (
     <View style={styles.card}>
@@ -130,29 +150,12 @@ const MyBookingsScreen: React.FC = () => {
         <Text style={styles.headerTitle}>My Bookings</Text>
       </View>
 
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#e94560" />
-        </View>
-      ) : bookings.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={styles.emptyText}>You have no bookings yet</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={bookings}
-          keyExtractor={item => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor="#e94560"
-            />
-          }
-        />
-      )}
+      <FlatList
+        data={bookings}
+        keyExtractor={item => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.list}
+      />
     </SafeAreaView>
   );
 };
@@ -250,15 +253,6 @@ const styles = StyleSheet.create({
     color: '#e94560',
     fontSize: 13,
     fontWeight: 'bold',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#a0a0b0',
-    fontSize: 15,
   },
 });
 

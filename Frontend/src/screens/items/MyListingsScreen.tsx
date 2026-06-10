@@ -1,50 +1,63 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   Alert,
-  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../../navigation/types';
-import { getItems, deleteItem } from '../../api/itemsApi';
-import { useAuthStore } from '../../store/authStore';
 import { Item } from '../../types/item.types';
 import ItemCard from '../../components/items/ItemCard';
 
 type NavProp = NativeStackNavigationProp<HomeStackParamList, 'HomeScreen'>;
 
+const FAKE_LISTINGS: Item[] = [
+  {
+    id: 'my-item-1',
+    ownerId: '1',
+    ownerName: 'Test User',
+    title: 'Nikon D3500 Camera',
+    description: 'Great camera for photography students. Includes kit lens and bag.',
+    category: 'PHOTOGRAPHY',
+    dailyPrice: 75,
+    isAvailable: true,
+    images: [],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'my-item-2',
+    ownerId: '1',
+    ownerName: 'Test User',
+    title: 'Scientific Calculator',
+    description: 'Casio FX-991ES Plus. Perfect for engineering and math courses.',
+    category: 'ELECTRONICS',
+    dailyPrice: 10,
+    isAvailable: true,
+    images: [],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'my-item-3',
+    ownerId: '1',
+    ownerName: 'Test User',
+    title: 'Mountain Bike',
+    description: 'Trek mountain bike, great condition. Helmet included.',
+    category: 'SPORTS',
+    dailyPrice: 40,
+    isAvailable: false,
+    images: [],
+    createdAt: new Date().toISOString(),
+  },
+];
+
 const MyListingsScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
-  const user = useAuthStore(state => state.user);
-
-  const [listings, setListings] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchMyListings = useCallback(async () => {
-    try {
-      const all = await getItems();
-      const mine = all.filter(item => item.ownerId === user?.id);
-      setListings(mine);
-    } catch {
-      console.error('Failed to fetch listings');
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchMyListings();
-    setRefreshing(false);
-  };
+  const [listings, setListings] = useState<Item[]>(FAKE_LISTINGS);
 
   const handleDelete = (itemId: string) => {
     Alert.alert(
@@ -55,22 +68,13 @@ const MyListingsScreen: React.FC = () => {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteItem(itemId);
-              setListings(prev => prev.filter(i => i.id !== itemId));
-            } catch {
-              Alert.alert('Error', 'Failed to delete listing');
-            }
+          onPress: () => {
+            setListings(prev => prev.filter(item => item.id !== itemId));
           },
         },
       ]
     );
   };
-
-  useEffect(() => {
-    fetchMyListings();
-  }, []);
 
   const renderItem = ({ item }: { item: Item }) => (
     <View style={styles.cardWrapper}>
@@ -100,11 +104,7 @@ const MyListingsScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#e94560" />
-        </View>
-      ) : listings.length === 0 ? (
+      {listings.length === 0 ? (
         <View style={styles.centered}>
           <Text style={styles.emptyText}>You have no listings yet</Text>
           <TouchableOpacity
@@ -122,13 +122,6 @@ const MyListingsScreen: React.FC = () => {
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.grid}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor="#e94560"
-            />
-          }
         />
       )}
     </SafeAreaView>
@@ -197,13 +190,13 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#a0a0b0',
     fontSize: 15,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   createButton: {
     backgroundColor: '#e94560',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 20,
+    borderRadius: 10,
   },
   createButtonText: {
     color: '#fff',
