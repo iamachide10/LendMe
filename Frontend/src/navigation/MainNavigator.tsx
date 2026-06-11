@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text } from 'react-native';
-import { MainTabParamList, HomeStackParamList ,InboxStackParamList} from './types';
+import { MainTabParamList, HomeStackParamList, InboxStackParamList, BookingsStackParamList } from './types';
 
 // Tab Screens
 import MyListingsScreen from '../screens/items/MyListingsScreen';
@@ -22,8 +22,8 @@ import PaymentSimulationScreen from '../screens/booking/PaymentSimulationScreen'
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
-
 const InboxStack = createNativeStackNavigator<InboxStackParamList>();
+const BookingsStack = createNativeStackNavigator<BookingsStackParamList>();
 
 const HomeStackNavigator: React.FC = () => (
   <HomeStack.Navigator screenOptions={{ headerShown: false }}>
@@ -38,19 +38,18 @@ const HomeStackNavigator: React.FC = () => (
   </HomeStack.Navigator>
 );
 
-
 const InboxStackNavigator: React.FC = () => (
   <InboxStack.Navigator screenOptions={{ headerShown: false }}>
-    <InboxStack.Screen
-      name="InboxScreen"
-      component={InboxScreen}
-    />
-
-    <InboxStack.Screen
-      name="ChatScreen"
-      component={ChatScreen}
-    />
+    <InboxStack.Screen name="InboxScreen" component={InboxScreen} />
+    <InboxStack.Screen name="ChatScreen" component={ChatScreen} />
   </InboxStack.Navigator>
+);
+
+const BookingsStackNavigator: React.FC = () => (
+  <BookingsStack.Navigator screenOptions={{ headerShown: false }}>
+    <BookingsStack.Screen name="MyBookingsScreen" component={MyBookingsScreen} />
+    <BookingsStack.Screen name="PaymentSimulation" component={PaymentSimulationScreen} />
+  </BookingsStack.Navigator>
 );
 
 const MainNavigator: React.FC = () => (
@@ -76,51 +75,29 @@ const MainNavigator: React.FC = () => (
     <Tab.Screen
       name="Home"
       component={HomeStackNavigator}
-      options={{
-        tabBarIcon: ({ color }) => (
-          <Text style={{ fontSize: 20, color }}>🏠</Text>
-        ),
-      }}
+      options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }}
     />
     <Tab.Screen
       name="MyListings"
       component={MyListingsScreen}
-      options={{
-        title: 'Listings',
-        tabBarIcon: ({ color }) => (
-          <Text style={{ fontSize: 20, color }}>📦</Text>
-        ),
-      }}
+      options={{ title: 'Listings', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📦</Text> }}
     />
-  <Tab.Screen
-  name="Inbox"
-  component={InboxStackNavigator}
-  options={{
-    tabBarIcon: ({ color }) => (
-      <Text style={{ fontSize: 20, color }}>💬</Text>
-    ),
-  }}
-/>
+    <Tab.Screen
+      name="Inbox"
+      component={InboxStackNavigator}
+      options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💬</Text> }}
+    />
     <Tab.Screen
       name="MyBookings"
-      component={MyBookingsScreen}
-      options={{
-        title: 'Bookings',
-        tabBarIcon: ({ color }) => (
-          <Text style={{ fontSize: 20, color }}>📅</Text>
-        ),
-      }}
+      component={BookingsStackNavigator}
+      options={{ title: 'Bookings', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📅</Text> }}
     />
     <Tab.Screen
       name="Profile"
       component={ProfileScreen}
-      options={{
-        tabBarIcon: ({ color }) => (
-          <Text style={{ fontSize: 20, color }}>👤</Text>
-        ),
-      }}
+      options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text> }}
     />
   </Tab.Navigator>
 );
 
-export default MainNavigator;     
+export default MainNavigator;
