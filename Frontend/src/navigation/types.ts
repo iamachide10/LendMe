@@ -24,9 +24,13 @@ export type HomeStackParamList = {
   ChatScreen: { conversationId: string; otherUserName: string };
 };
 
+export type BookingsStackParamList = {
+  MyBookingsScreen: undefined;
+  PaymentSimulation: { bookingId: string; amount: number };
+};
+
 export type InboxStackParamList = {
   InboxScreen: undefined;
-
   ChatScreen: {
     conversationId: string;
     otherUserName: string;
