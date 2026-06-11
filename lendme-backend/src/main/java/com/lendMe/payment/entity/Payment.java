@@ -3,6 +3,7 @@ package com.lendMe.payment.entity;
 import com.lendMe.booking.entity.Booking;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +36,7 @@ public class Payment {
     @Column(nullable = false)
     private PaymentStatus status = PaymentStatus.SIMULATED;
 
-    @Column(nullable = false)
-    private LocalDateTime paidAt = LocalDateTime.now();
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime paidAt;
 }

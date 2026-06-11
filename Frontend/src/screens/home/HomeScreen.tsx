@@ -18,6 +18,7 @@ import CategoryPicker from '../../components/items/CategoryPicker';
 
 type NavProp = NativeStackNavigationProp<HomeStackParamList, 'HomeScreen'>;
 
+
 const FAKE_ITEMS: Item[] = [
   {
     id: 'item-1',

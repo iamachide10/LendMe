@@ -43,6 +43,7 @@ public class PaymentService {
                 .amount(booking.getTotalPrice())
                 .transactionRef(UUID.randomUUID().toString())
                 .status(PaymentStatus.SIMULATED)
+                .paidAt(java.time.LocalDateTime.now())
                 .build();
 
         booking.setStatus(BookingStatus.PAID);
