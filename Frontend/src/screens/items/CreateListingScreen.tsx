@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { HomeStackParamList } from '../../navigation/types';
-import { createItem } from '../../api/itemsApi';
+import { createItem, uploadItemImage } from '../../api/itemsApi';
 import { ItemCategory } from '../../types/item.types';
 import { ITEM_CATEGORIES } from '../../utils/constants';
 
@@ -52,7 +52,7 @@ const CreateListingScreen: React.FC<Props> = ({ navigation }) => {
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes:  ['images'],
       allowsMultipleSelection: true,
       quality: 0.7,
     });
@@ -67,13 +67,17 @@ const CreateListingScreen: React.FC<Props> = ({ navigation }) => {
     if (!validate()) return;
     setLoading(true);
     try {
-      await createItem({
-        title: title.trim(),
-        description: description.trim(),
-        category: category!,
-        dailyPrice: Number(dailyPrice),
-        images,
-      });
+     const item = await createItem({
+      title: title.trim(),
+      description: description.trim(),
+      category: category!,
+      dailyPrice: Number(dailyPrice),
+      images,
+    });
+
+    for (const imageUri of images) {
+      await uploadItemImage(item.id, imageUri);
+    }
       Alert.alert('Success', 'Your item has been listed!', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);

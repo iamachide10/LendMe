@@ -35,7 +35,6 @@ public class Message {
     @Column(nullable = false)
     private Boolean isRead = false;
 
-    @CreationTimestamp
-    @Column(updatable = false)
+    @Column(updatable = false, nullable = false)
     private LocalDateTime sentAt;
 }

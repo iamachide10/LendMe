@@ -21,14 +21,15 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
 
     List<Item> findByOwner(User owner);
 
-    @Query("SELECT i FROM Item i WHERE i.isAvailable = true " +
-           "AND (:category IS NULL OR i.category = :category) " +
-           "AND (:minPrice IS NULL OR i.dailyPrice >= :minPrice) " +
-           "AND (:maxPrice IS NULL OR i.dailyPrice <= :maxPrice) " +
-           "AND (:keyword IS NULL OR LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Item> searchItems(@Param("keyword") String keyword,
-                           @Param("category") ItemCategory category,
-                           @Param("minPrice") BigDecimal minPrice,
-                           @Param("maxPrice") BigDecimal maxPrice,
-                           Pageable pageable);
+     @Query("SELECT i FROM Item i WHERE i.isAvailable = true " +
+       "AND (:category IS NULL OR i.category = :category) " +
+       "AND (:minPrice IS NULL OR i.dailyPrice >= :minPrice) " +
+       "AND (:maxPrice IS NULL OR i.dailyPrice <= :maxPrice) " +
+       "AND (:search IS NULL OR LOWER(i.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))")
+Page<Item> searchItems(@Param("search") String search,
+                       @Param("category") ItemCategory category,
+                       @Param("minPrice") BigDecimal minPrice,
+                       @Param("maxPrice") BigDecimal maxPrice,
+                       Pageable pageable);
+
 }

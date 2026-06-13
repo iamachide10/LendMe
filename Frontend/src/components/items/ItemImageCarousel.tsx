@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { ItemImage } from '../../types/item.types';
+import { BASE_URL } from '../../utils/constants';
 
 interface Props {
   images: ItemImage[];
@@ -34,10 +35,19 @@ const ItemImageCarousel: React.FC<Props> = ({ images }) => {
           const index = Math.round(e.nativeEvent.contentOffset.x / width);
           setActiveIndex(index);
         }}
-        renderItem={({ item }) => (
-          <Image source={{ uri: item.imageUrl }} style={styles.image} />
-        )}
-      />
+      renderItem={({ item }) => {
+      console.log('Carousel image URL:', item.imageUrl);
+      console.log("Required" , `${BASE_URL}${item.imageUrl}`);
+    
+
+      return (
+        <Image
+          source={{ uri: `${BASE_URL}${item.imageUrl}` }}
+          style={styles.image}
+        />
+      );
+    }}
+          />
 
       {/* Dots */}
       <View style={styles.dots}>

@@ -1,5 +1,6 @@
-export const API_BASE_URL = 'http://10.0.2.2:8080/api';
-export const WEBSOCKET_URL = 'ws://10.0.2.2:8080/ws';
+export const API_BASE_URL = 'http://10.144.178.142:8080/api';
+export const WEBSOCKET_URL = 'http://10.144.178.142:8080/ws';
+export const BASE_URL = 'http://10.144.178.142:8080'
 
 export const ITEM_CATEGORIES = [
   'ELECTRONICS',

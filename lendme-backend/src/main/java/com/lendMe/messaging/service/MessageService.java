@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -37,7 +38,7 @@ public class MessageService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
+     @Transactional
     public MessageDto sendMessage(SendMessageRequest request, String email) {
         User sender = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -58,21 +59,62 @@ public class MessageService {
                 .sender(sender)
                 .content(request.getContent())
                 .isRead(false)
+                .sentAt(LocalDateTime.now()) 
                 .build();
 
         return toMessageDto(messageRepository.save(message));
     }
 
-    private ConversationDto toConversationDto(Conversation c, User currentUser) {
-        ConversationDto dto = new ConversationDto();
-        dto.setId(c.getId());
-        User other = c.getParticipant1().getId().equals(currentUser.getId())
-                ? c.getParticipant2() : c.getParticipant1();
-        dto.setOtherUserId(other.getId());
-        dto.setOtherUserName(other.getName());
-        dto.setCreatedAt(c.getCreatedAt());
-        return dto;
-    }
+    @Transactional
+        public void markAsRead(UUID conversationId, String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        messageRepository.markMessagesAsRead(conversationId, user.getId());
+        }
+
+    @Transactional
+    public ConversationDto startConversation(UUID receiverId, String email) {
+    User sender = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    User receiver = userRepository.findById(receiverId)
+            .orElseThrow(() -> new RuntimeException("Receiver not found"));
+
+    Conversation conversation = conversationRepository
+            .findByParticipants(sender, receiver)
+            .orElseGet(() -> conversationRepository.save(
+                    Conversation.builder()
+                            .participant1(sender)
+                            .participant2(receiver)
+                            .build()
+            ));
+
+         return toConversationDto(conversation, sender);
+        }
+
+  private ConversationDto toConversationDto(Conversation c, User currentUser) {
+    ConversationDto dto = new ConversationDto();
+    dto.setId(c.getId());
+
+    User other = c.getParticipant1().getId().equals(currentUser.getId())
+            ? c.getParticipant2() : c.getParticipant1();
+    dto.setOtherUserId(other.getId());
+    dto.setOtherUserName(other.getName());
+    dto.setCreatedAt(c.getCreatedAt());
+
+    // Last message
+    Message lastMsg = messageRepository
+            .findTopByConversationIdOrderBySentAtDesc(c.getId())
+            .orElse(null);
+    dto.setLastMessage(lastMsg != null ? lastMsg.getContent() : null);
+
+    // Unread count — messages sent by the OTHER user, not read by current user
+    int unread = messageRepository.countByConversationIdAndSenderIdNotAndIsReadFalse(
+            c.getId(), currentUser.getId());
+    dto.setUnreadCount(unread);
+
+    return dto;
+}
 
     private MessageDto toMessageDto(Message m) {
         MessageDto dto = new MessageDto();
