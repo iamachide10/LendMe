@@ -14,6 +14,7 @@ import { HomeStackParamList } from '../../navigation/types';
 import { getItemById } from '../../api/itemsApi';
 import { useItemStore } from '../../store/itemStore';
 import { useAuthStore } from '../../store/authStore';
+import { startConversation } from '../../api/messageApi';
 import { Item } from '../../types/item.types';
 import ItemImageCarousel from '../../components/items/ItemImageCarousel';
 
@@ -26,6 +27,8 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const [item, setItem] = useState<Item | null>(null);
   const [loading, setLoading] = useState(true);
+
+  
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -112,15 +115,22 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         ) : (
           <View style={styles.renterActions}>
             <TouchableOpacity
-              style={styles.messageButton}
-              onPress={() =>
-                navigation.navigate('ChatScreen', {
-                  conversationId: '',
-                  otherUserName: item.ownerName,
-                })
-              }
-            >
-              <Text style={styles.messageButtonText}>Message</Text>
+        style={styles.messageButton}
+        onPress={async () => {
+          try {
+            const conversation = await startConversation(item.ownerId);
+
+            navigation.navigate('ChatScreen', {
+              conversationId: conversation.id,
+              receiverId: conversation.otherUserId,
+              otherUserName: conversation.otherUserName,
+            });
+          } catch (error) {
+            console.error('Failed to start conversation', error);
+          }
+        }}
+      >
+                  <Text style={styles.messageButtonText}>Message</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

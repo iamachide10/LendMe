@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -74,4 +75,13 @@ public class ItemController {
         itemService.deleteItem(id, userDetails.getUsername());
         return ResponseEntity.noContent().build();
     }
+    @PostMapping("/{id}/images")
+    public ResponseEntity<ItemResponseDto> uploadImage(
+        @PathVariable UUID id,
+        @RequestParam("file") MultipartFile file,
+        @AuthenticationPrincipal UserDetails userDetails) throws java.io.IOException {
+    return ResponseEntity.ok(itemService.uploadImage(id, file, userDetails.getUsername()));
+}
+
+    
 }

@@ -10,10 +10,12 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSocket } from '../../hooks/useSocket';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../../navigation/types';
-import { getMessages } from '../../api/messageApi';
+import { getMessages ,markConversationAsRead } from '../../api/messageApi';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
 import { Message } from '../../types/message.types';
@@ -23,196 +25,70 @@ import TypingIndicator from '../../components/messaging/TypingIndicator';
 import { io, Socket } from 'socket.io-client';
 
 
-const FAKE_MESSAGES: Message[] = [
-  {
-    id: '1',
-    conversationId: 'conv-1',
-    senderId: '2',
-    senderName: 'Kwame Mensah',
-    content: 'Hi, is the camera still available?',
-    isRead: true,
-    sentAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    conversationId: 'conv-1',
-    senderId: '1',
-    senderName: 'You',
-    content: 'Yes, it is available.',
-    isRead: true,
-    sentAt: new Date().toISOString(),
-  },
-
-  {
-    id: '3',
-    conversationId: 'conv-2',
-    senderId: '3',
-    senderName: 'Abena Asante',
-    content: 'I will return it by Friday.',
-    isRead: true,
-    sentAt: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    conversationId: 'conv-2',
-    senderId: '1',
-    senderName: 'You',
-    content: 'Okay, thank you.',
-    isRead: true,
-    sentAt: new Date().toISOString(),
-  },
-
-  {
-    id: '5',
-    conversationId: 'conv-7',
-    senderId: '8',
-    senderName: 'Kofi Boateng',
-    content: 'Hello! Are the football boots still available?',
-    isRead: true,
-    sentAt: new Date().toISOString(),
-  },
-  {
-    id: '6',
-    conversationId: 'conv-7',
-    senderId: '1',
-    senderName: 'You',
-    content: 'Yes, they are.',
-    isRead: true,
-    sentAt: new Date().toISOString(),
-  },
-  {
-    id: '7',
-    conversationId: 'conv-7',
-    senderId: '8',
-    senderName: 'Kofi Boateng',
-    content: 'Great. Can I pick them up tomorrow?',
-    isRead: true,
-    sentAt: new Date().toISOString(),
-  },
-];
-
 type Props = NativeStackScreenProps<HomeStackParamList, 'ChatScreen'>;
 
 const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const { conversationId, otherUserName } = route.params;
   const { activeMessages, setActiveMessages, appendMessage } = useMessageStore();
   const user = useAuthStore(state => state.user);
-  // const accessToken = useAuthStore(state => state.accessToken);
+  const accessToken = useAuthStore(state => state.accessToken);
 
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
-  // const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
 
-  useEffect(() => {
-  const messages = FAKE_MESSAGES.filter(
-    msg => msg.conversationId === conversationId,
-  );
-
-  setActiveMessages(messages);
-  setLoading(false);
-
-  return () => {
-    setActiveMessages([]);
+const { sendMessage } = useSocket((msg: Message) => {
+  console.log('WS message received:', JSON.stringify(msg));
+  if (msg.conversationId === conversationId) {
+    appendMessage(msg);
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  }
+});
+useEffect(() => {
+  const fetchMessages = async () => {
+    try {
+      const data = await getMessages(conversationId);
+      setActiveMessages(data);
+      await markConversationAsRead(conversationId); // ← add this
+    } catch {
+      console.error('Failed to load messages');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  fetchMessages();
+
+  return () => setActiveMessages([]);
 }, [conversationId]);
 
-  // useEffect(() => {
-  //   const fetchMessages = async () => {
-  //     try {
-  //       const data = await getMessages(conversationId);
-  //       setActiveMessages(data);
-  //     } catch {
-  //       console.error('Failed to load messages');
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
 
-  //   fetchMessages();
+const handleSend = () => {
+  console.log("Send button pressed");
 
-  //   // Connect WebSocket
-  //   const socket = io(WEBSOCKET_URL, {
-  //     query: { token: accessToken },
-  //   });
+  if (!message.trim()) {
+    console.log("Message is empty");
+    return;
+  }
 
-  //   socketRef.current = socket;
+  console.log("receiverId:", route.params.receiverId);
+  console.log("message:", message);
 
-  //   socket.emit('join', { conversationId });
-
-  //   socket.on('message', (msg: Message) => {
-  //     appendMessage(msg);
-  //   });
-
-  //   socket.on('typing', () => {
-  //     setIsTyping(true);
-  //     setTimeout(() => setIsTyping(false), 2000);
-  //   });
-
-  //   return () => {
-  //     socket.disconnect();
-  //     setActiveMessages([]);
-  //   };
-  // }, [conversationId]);
-
-  const handleSend = () => {
-  if (!message.trim()) return;
-
-  const newMessage: Message = {
-    id: Date.now().toString(),
-    conversationId,
-    senderId: user?.id || '1',
-    senderName: user?.name || 'You',
-    content: message.trim(),
-    isRead: false,
-    sentAt: new Date().toISOString(),
-  };
-
-  appendMessage(newMessage);
-
+  sendMessage(route.params.receiverId, message.trim());
   setMessage('');
-
-  setTimeout(() => {
-    flatListRef.current?.scrollToEnd({ animated: true });
-  }, 100);
 };
 
-  // const handleSend = () => {
-  //   if (!message.trim() || !socketRef.current) return;
-
-  //   const newMessage: Message = {
-  //     id: Date.now().toString(),
-  //     conversationId,
-  //     senderId: user?.id || '',
-  //     senderName: user?.name || '',
-  //     content: message.trim(),
-  //     isRead: false,
-  //     sentAt: new Date().toISOString(),
-  //   };
-
-  //   socketRef.current.emit('message', {
-  //     conversationId,
-  //     content: message.trim(),
-  //   });
-
-  //   appendMessage(newMessage);
-  //   setMessage('');
-
-  //   setTimeout(() => {
-  //     flatListRef.current?.scrollToEnd({ animated: true });
-  //   }, 100);
-  // };
+//   const handleTyping = (text: string) => {
+//   setMessage(text);
+// };
 
   const handleTyping = (text: string) => {
-  setMessage(text);
-};
-
-  // const handleTyping = (text: string) => {
-  //   setMessage(text);
-  //   socketRef.current?.emit('typing', { conversationId });
-  // };
+    setMessage(text);
+    socketRef.current?.emit('typing', { conversationId });
+  };
 
   const renderItem = ({ item }: { item: Message }) => (
     <ChatBubble message={item} isOwn={item.senderId === user?.id} />

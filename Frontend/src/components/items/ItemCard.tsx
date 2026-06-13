@@ -8,6 +8,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { Item } from '../../types/item.types';
+import { BASE_URL } from '../../utils/constants';
+
 
 interface Props {
   item: Item;
@@ -26,9 +28,8 @@ const ItemCard: React.FC<Props> = ({ item, onPress }) => {
       onPress={() => onPress(item)}
       activeOpacity={0.85}
     >
-      {primaryImage ? (
-        <Image source={{ uri: primaryImage }} style={styles.image} />
-      ) : (
+     {primaryImage ? (
+  <Image source={{ uri: `${BASE_URL}${primaryImage}` }} style={styles.image} />)     :(
         <View style={styles.imagePlaceholder}>
           <Text style={styles.imagePlaceholderText}>No Image</Text>
         </View>

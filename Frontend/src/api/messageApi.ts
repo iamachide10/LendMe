@@ -10,3 +10,17 @@ export const getMessages = async (conversationId: string): Promise<Message[]> =>
   const res = await axiosInstance.get(`/conversations/${conversationId}/messages`);
   return res.data;
 };
+
+export const markConversationAsRead = async (conversationId: string): Promise<void> => {
+  await axiosInstance.put(`/conversations/${conversationId}/read`);
+};
+
+export const startConversation = async (
+  receiverId: string
+): Promise<Conversation> => {
+  const response = await axiosInstance.post<Conversation>(
+    `/conversations/start/${receiverId}`
+  );
+
+  return response.data;
+};

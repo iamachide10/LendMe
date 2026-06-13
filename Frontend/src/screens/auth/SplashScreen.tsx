@@ -1,23 +1,35 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../navigation/types';
+import { getAccessToken, getRefreshToken, saveTokens } from '../../utils/tokenStorage';
+import { refreshTokens } from '../../api/authApi';
 import { useAuthStore } from '../../store/authStore';
 
-const SplashScreen: React.FC = () => {
+type Props = NativeStackScreenProps<AuthStackParamList, 'Splash'>;
+
+const SplashScreen: React.FC<Props> = ({ navigation }) => {
   const setAuth = useAuthStore(state => state.setAuth);
 
   useEffect(() => {
-    // Temporary: fake login to test Home screen
-    setAuth(
-      {
-        id: '1',
-        name: 'Test User',
-        email: 'test@knust.edu.gh',
-        isVerified: true,
-        createdAt: new Date().toISOString(),
-      },
-      'fake-access-token',
-      'fake-refresh-token'
-    );
+    const checkToken = async () => {
+      try {
+        const accessToken = await getAccessToken();
+        const refreshToken = await getRefreshToken();
+
+        if (accessToken && refreshToken) {
+          const res = await refreshTokens(refreshToken);
+          await saveTokens(res.accessToken, res.refreshToken);
+          setAuth(res.user, res.accessToken, res.refreshToken);
+        } else {
+          navigation.replace('Login');
+        }
+      } catch {
+        navigation.replace('Login');
+      }
+    };
+
+    checkToken();
   }, []);
 
   return (

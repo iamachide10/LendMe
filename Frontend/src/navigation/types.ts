@@ -21,18 +21,14 @@ export type HomeStackParamList = {
   BookingConfirm: { bookingId: string };
   PaymentSimulation: { bookingId: string; amount: number };
   LeaveReview: { bookingId: string; revieweeId: string; itemId: string };
-  ChatScreen: { conversationId: string; otherUserName: string };
+  ChatScreen: { conversationId: string; otherUserName: string; receiverId: string };
 };
 
 export type BookingsStackParamList = {
   MyBookingsScreen: undefined;
   PaymentSimulation: { bookingId: string; amount: number };
 };
-
 export type InboxStackParamList = {
   InboxScreen: undefined;
-  ChatScreen: {
-    conversationId: string;
-    otherUserName: string;
-  };
+ ChatScreen: { conversationId: string; otherUserName: string; receiverId: string };
 };

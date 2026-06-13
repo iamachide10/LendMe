@@ -9,11 +9,12 @@ interface Props {
 
 const CategoryPicker: React.FC<Props> = ({ selected, onSelect }) => {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
+   <ScrollView
+  horizontal
+  showsHorizontalScrollIndicator={false}
+  style={styles.scrollView}
+  contentContainerStyle={styles.container}
+>
       {/* All option */}
       <TouchableOpacity
         style={[styles.chip, !selected ? styles.chipActive : null]}
@@ -50,6 +51,11 @@ const styles = StyleSheet.create({
   paddingVertical: 12,
   flexDirection: 'row',
   alignItems: 'center',
+},
+scrollView: {
+  flexGrow: 0,
+  flexShrink: 0,
+  height: 60,
 },
 
 chip: {

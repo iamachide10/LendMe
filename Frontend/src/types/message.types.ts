@@ -10,11 +10,14 @@ export interface Message {
 
 export interface Conversation {
   id: string;
-  participant1: string;
-  participant2: string;
+  otherUserId: string;
   otherUserName: string;
   otherUserPhoto?: string;
   lastMessage?: string;
   unreadCount: number;
   createdAt: string;
 }
+
+
+
+

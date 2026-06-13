@@ -36,4 +36,26 @@ public class MessageController {
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(messageService.sendMessage(request, userDetails.getUsername()));
     }
+
+    @PostMapping("/start/{receiverId}")
+    public ResponseEntity<ConversationDto> startConversation(
+            @PathVariable UUID receiverId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        return ResponseEntity.ok(
+                messageService.startConversation(
+                        receiverId,
+                        userDetails.getUsername()
+                )
+        );
+    }
+
+
+    @PutMapping("/{id}/read")
+    public ResponseEntity<Void> markAsRead(
+        @PathVariable UUID id,
+        @AuthenticationPrincipal UserDetails userDetails) {
+    messageService.markAsRead(id, userDetails.getUsername());
+    return ResponseEntity.noContent().build();
+}
 }

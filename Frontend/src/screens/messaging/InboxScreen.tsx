@@ -1,107 +1,69 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
+  ActivityIndicator,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation , useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { InboxStackParamList } from '../../navigation/types';
+import { HomeStackParamList } from '../../navigation/types';
+import { getConversations } from '../../api/messageApi';
+import { useMessageStore } from '../../store/messageStore';
 import { Conversation } from '../../types/message.types';
 
-type NavProp = NativeStackNavigationProp<InboxStackParamList,'InboxScreen'>;
-
-const FAKE_CONVERSATIONS: Conversation[] = [
-  {
-    id: 'conv-1',
-    participant1: '1',
-    participant2: '2',
-    otherUserName: 'Kwame Mensah',
-    lastMessage: 'Is the camera still available?',
-    unreadCount: 2,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'conv-2',
-    participant1: '1',
-    participant2: '3',
-    otherUserName: 'Abena Asante',
-    lastMessage: 'I will return it by Friday',
-    unreadCount: 0,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'conv-3',
-    participant1: '1',
-    participant2: '4',
-    otherUserName: 'Kofi Boateng',
-    lastMessage: 'Thanks for the quick response!',
-    unreadCount: 1,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'conv-4',
-    participant1: '1',
-    participant2: '5',
-    otherUserName: 'Kofi Boateng',
-    lastMessage: 'Thanks for the quick response!',
-    unreadCount: 4,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'conv-5',
-    participant1: '1',
-    participant2: '6',
-    otherUserName: 'Kofi Boateng',
-    lastMessage: 'Thanks for the quick response!',
-    unreadCount: 1,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'conv-6',
-    participant1: '1',
-    participant2: '7',
-    otherUserName: 'Kofi Boateng',
-    lastMessage: 'Thanks for the quick response!',
-    unreadCount: 1,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'conv-7',
-    participant1: '1',
-    participant2: '8',
-    otherUserName: 'Kofi Boateng',
-    lastMessage: 'Thanks for the quick response!',
-    unreadCount: 1,
-    createdAt: new Date().toISOString(),
-  },
-];
+type NavProp = NativeStackNavigationProp<HomeStackParamList, 'HomeScreen'>;
 
 const InboxScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
-  const [conversations] = useState<Conversation[]>(FAKE_CONVERSATIONS);
+  const { conversations, setConversations } = useMessageStore();
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
+  const fetchConversations = useCallback(async () => {
+    try {
+      const data = await getConversations();
+      setConversations(data);
+    } catch {
+      console.error('Failed to fetch conversations');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchConversations();
+    setRefreshing(false);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchConversations();
+    }, [])
+  );
   const renderItem = ({ item }: { item: Conversation }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() =>
-        navigation.navigate('ChatScreen', {
-          conversationId: item.id,
-          otherUserName: item.otherUserName,
-        })
+  navigation.navigate('ChatScreen', {
+    conversationId: item.id,
+    otherUserName: item.otherUserName,
+    receiverId: item.otherUserId,  // ← add this
+  }
+    )
       }
     >
-      {/* Avatar */}
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>
           {item.otherUserName.charAt(0).toUpperCase()}
         </Text>
       </View>
 
-      {/* Content */}
       <View style={styles.content}>
         <View style={styles.topRow}>
           <Text style={styles.name}>{item.otherUserName}</Text>
@@ -124,12 +86,32 @@ const InboxScreen: React.FC = () => {
         <Text style={styles.headerTitle}>Inbox</Text>
       </View>
 
-      <FlatList
-        data={conversations}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-      />
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#e94560" />
+        </View>
+      ) : conversations.length === 0 ? (
+        <View style={styles.centered}>
+          <Text style={styles.emptyText}>No conversations yet</Text>
+          <Text style={styles.emptySubtext}>
+            Message a seller from an item listing to get started
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={conversations}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#e94560"
+            />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -205,6 +187,24 @@ const styles = StyleSheet.create({
   lastMessage: {
     color: '#a0a0b0',
     fontSize: 13,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    color: '#a0a0b0',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 
