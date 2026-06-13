@@ -1,4 +1,4 @@
-# UniSwap — Campus Peer-to-Peer Rental Marketplace
+# LendMe — Campus Peer-to-Peer Rental Marketplace
 
 > A hyper-local rental platform exclusively for KNUST students.  
 > Built with React Native (Android) · Spring Boot · PostgreSQL
