@@ -60,6 +60,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       await saveTokens(res.accessToken, res.refreshToken);
       setAuth(res.user, res.accessToken, res.refreshToken);
     } catch (err: any) {
+      console.log(err)
       Alert.alert(
         'Registration Failed',
         err?.response?.data?.message || 'Something went wrong. Please try again.'

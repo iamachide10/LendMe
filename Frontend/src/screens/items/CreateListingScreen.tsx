@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,24 +14,52 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { HomeStackParamList } from '../../navigation/types';
-import { createItem, uploadItemImage } from '../../api/itemsApi';
+import { createItem, updateItem, getItemById, uploadItemImage } from '../../api/itemsApi';
 import { ItemCategory } from '../../types/item.types';
-import { ITEM_CATEGORIES } from '../../utils/constants';
+import { ITEM_CATEGORIES, BASE_URL } from '../../utils/constants';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'CreateListing'>;
 
-const CreateListingScreen: React.FC<Props> = ({ navigation }) => {
+const CreateListingScreen: React.FC<Props> = ({ navigation, route }) => {
+  const itemId = route.params?.itemId;
+  const isEditMode = !!itemId;
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<ItemCategory | null>(null);
   const [dailyPrice, setDailyPrice] = useState('');
-  const [images, setImages] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<string[]>([]); // local URIs to upload
+  const [existingImages, setExistingImages] = useState<{ id: string; imageUrl: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(isEditMode);
 
   const [titleError, setTitleError] = useState<string | null>(null);
   const [descError, setDescError] = useState<string | null>(null);
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isEditMode && itemId) {
+      const fetchItem = async () => {
+        try {
+          const item = await getItemById(itemId);
+          setTitle(item.title);
+          setDescription(item.description);
+          setCategory(item.category);
+          setDailyPrice(item.dailyPrice.toString());
+          setExistingImages(
+            item.images?.map(img => ({ id: img.id, imageUrl: img.imageUrl })) || []
+          );
+        } catch {
+          Alert.alert('Error', 'Failed to load item');
+          navigation.goBack();
+        } finally {
+          setInitialLoading(false);
+        }
+      };
+      fetchItem();
+    }
+  }, [itemId]);
 
   const validate = (): boolean => {
     const tErr = !title.trim() ? 'Title is required' : null;
@@ -52,14 +80,19 @@ const CreateListingScreen: React.FC<Props> = ({ navigation }) => {
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes:  ['images'],
+      mediaTypes: ['images'],
       allowsMultipleSelection: true,
       quality: 0.7,
     });
 
     if (!result.canceled) {
       const uris = result.assets.map(a => a.uri);
-      setImages(prev => [...prev, ...uris].slice(0, 5));
+      const totalCount = existingImages.length + newImages.length + uris.length;
+      if (totalCount > 5) {
+        Alert.alert('Limit Reached', 'You can have up to 5 photos total');
+        return;
+      }
+      setNewImages(prev => [...prev, ...uris]);
     }
   };
 
@@ -67,29 +100,53 @@ const CreateListingScreen: React.FC<Props> = ({ navigation }) => {
     if (!validate()) return;
     setLoading(true);
     try {
-     const item = await createItem({
-      title: title.trim(),
-      description: description.trim(),
-      category: category!,
-      dailyPrice: Number(dailyPrice),
-      images,
-    });
+      let savedItemId: string;
 
-    for (const imageUri of images) {
-      await uploadItemImage(item.id, imageUri);
-    }
-      Alert.alert('Success', 'Your item has been listed!', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      if (isEditMode && itemId) {
+        await updateItem(itemId, {
+          title: title.trim(),
+          description: description.trim(),
+          category: category!,
+          dailyPrice: Number(dailyPrice),
+        });
+        savedItemId = itemId;
+      } else {
+        const created = await createItem({
+          title: title.trim(),
+          description: description.trim(),
+          category: category!,
+          dailyPrice: Number(dailyPrice),
+        });
+        savedItemId = created.id;
+      }
+
+      // Upload any newly picked images
+      for (const uri of newImages) {
+        await uploadItemImage(savedItemId, uri);
+      }
+
+      Alert.alert(
+        'Success',
+        isEditMode ? 'Your listing has been updated!' : 'Your item has been listed!',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
     } catch (err: any) {
       Alert.alert(
         'Failed',
-        err?.response?.data?.message || 'Could not create listing'
+        err?.response?.data?.message || 'Could not save listing'
       );
     } finally {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#e94560" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -99,7 +156,9 @@ const CreateListingScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>New Listing</Text>
+          <Text style={styles.headerTitle}>
+            {isEditMode ? 'Edit Listing' : 'New Listing'}
+          </Text>
           <View style={{ width: 50 }} />
         </View>
 
@@ -164,20 +223,36 @@ const CreateListingScreen: React.FC<Props> = ({ navigation }) => {
         />
         {priceError && <Text style={styles.errorText}>{priceError}</Text>}
 
-        {/* Images */}
-        <Text style={styles.label}>Photos (up to 5)</Text>
+        {/* Existing Images (Edit Mode) */}
+        {existingImages.length > 0 && (
+          <>
+            <Text style={styles.label}>Current Photos</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewRow}>
+              {existingImages.map(img => (
+                <View key={img.id} style={styles.imagePreviewContainer}>
+                  <Image source={{ uri: `${BASE_URL}${img.imageUrl}` }} style={styles.imagePreview} />
+                </View>
+              ))}
+            </ScrollView>
+          </>
+        )}
+
+        {/* New Images */}
+        <Text style={styles.label}>
+          {isEditMode ? 'Add More Photos' : 'Photos (up to 5)'}
+        </Text>
         <TouchableOpacity style={styles.imagePickerButton} onPress={handlePickImage}>
           <Text style={styles.imagePickerText}>+ Add Photos</Text>
         </TouchableOpacity>
 
-        {images.length > 0 && (
+        {newImages.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewRow}>
-            {images.map((uri, index) => (
+            {newImages.map((uri, index) => (
               <View key={index} style={styles.imagePreviewContainer}>
                 <Image source={{ uri }} style={styles.imagePreview} />
                 <TouchableOpacity
                   style={styles.removeImage}
-                  onPress={() => setImages(prev => prev.filter((_, i) => i !== index))}
+                  onPress={() => setNewImages(prev => prev.filter((_, i) => i !== index))}
                 >
                   <Text style={styles.removeImageText}>✕</Text>
                 </TouchableOpacity>
@@ -195,7 +270,9 @@ const CreateListingScreen: React.FC<Props> = ({ navigation }) => {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.submitButtonText}>Post Listing</Text>
+            <Text style={styles.submitButtonText}>
+              {isEditMode ? 'Save Changes' : 'Post Listing'}
+            </Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -206,6 +283,12 @@ const CreateListingScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#1a1a2e',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#1a1a2e',
   },
   scroll: {

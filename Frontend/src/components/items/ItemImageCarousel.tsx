@@ -36,10 +36,6 @@ const ItemImageCarousel: React.FC<Props> = ({ images }) => {
           setActiveIndex(index);
         }}
       renderItem={({ item }) => {
-      console.log('Carousel image URL:', item.imageUrl);
-      console.log("Required" , `${BASE_URL}${item.imageUrl}`);
-    
-
       return (
         <Image
           source={{ uri: `${BASE_URL}${item.imageUrl}` }}
