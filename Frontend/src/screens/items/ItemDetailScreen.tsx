@@ -106,13 +106,16 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
       {/* Action Buttons */}
       <View style={styles.footer}>
-        {isOwner ? (
-          <View style={styles.ownerActions}>
-            <TouchableOpacity style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit Listing</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
+       {isOwner ? (
+        <View style={styles.ownerActions}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => navigation.navigate('CreateListing', { itemId: item.id })}
+          >
+            <Text style={styles.editButtonText}>Edit Listing</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
           <View style={styles.renterActions}>
             <TouchableOpacity
         style={styles.messageButton}

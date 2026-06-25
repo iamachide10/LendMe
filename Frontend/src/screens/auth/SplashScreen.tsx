@@ -34,7 +34,7 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>UniSwap</Text>
+      <Text style={styles.logo}>LendMe</Text>
       <Text style={styles.tagline}>KNUST Campus Rentals</Text>
     </View>
   );

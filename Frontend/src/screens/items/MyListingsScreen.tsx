@@ -12,13 +12,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { HomeStackParamList } from '../../navigation/types';
 import { getItems, deleteItem } from '../../api/itemsApi';
 import { useAuthStore } from '../../store/authStore';
 import { Item } from '../../types/item.types';
 import ItemCard from '../../components/items/ItemCard';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { MainTabParamList, HomeStackParamList } from '../../navigation/types';
 
-type NavProp = NativeStackNavigationProp<HomeStackParamList, 'HomeScreen'>;
+
+
+type NavProp = CompositeNavigationProp<BottomTabNavigationProp<MainTabParamList, 'MyListings'>,NativeStackNavigationProp<HomeStackParamList>>;
+
 
 const MyListingsScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
@@ -76,7 +81,7 @@ const MyListingsScreen: React.FC = () => {
     <View style={styles.cardWrapper}>
       <ItemCard
         item={item}
-        onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
+      onPress={() => navigation.navigate('Home', { screen: 'ItemDetail', params: { itemId: item.id } })}
       />
       <TouchableOpacity
         style={styles.deleteButton}
@@ -93,7 +98,8 @@ const MyListingsScreen: React.FC = () => {
         <Text style={styles.headerTitle}>My Listings</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate('CreateListing')}
+    
+        onPress={() => navigation.navigate('Home', { screen: 'CreateListing' })}
         >
           <Text style={styles.addButtonText}>+ Add</Text>
         </TouchableOpacity>

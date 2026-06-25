@@ -21,4 +21,5 @@ public class ItemResponseDto {
     private UUID ownerId;
     private List<ItemImageDto> images;
     private LocalDateTime createdAt;
+    // private <ItemImageDto>Images;
 }

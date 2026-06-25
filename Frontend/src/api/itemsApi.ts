@@ -1,5 +1,5 @@
 import axiosInstance from './axiosInstance';
-import { Item, CreateItemRequest, ItemFilters } from '../types/item.types';
+import { Item, ItemFilters } from '../types/item.types';
 
 interface PageResponse<T> {
   content: T[];
@@ -7,6 +7,13 @@ interface PageResponse<T> {
   totalPages: number;
   number: number;
   size: number;
+}
+
+export interface CreateItemRequest {
+  title: string;
+  description: string;
+  category: Item['category'];
+  dailyPrice: number;
 }
 
 export const getItems = async (page = 0, size = 20): Promise<Item[]> => {
@@ -23,12 +30,7 @@ export const getItemById = async (id: string): Promise<Item> => {
 
 export const searchItems = async (filters: ItemFilters): Promise<Item[]> => {
   const res = await axiosInstance.get<PageResponse<Item>>('/items/search', {
-    params: {
-      keyword: filters.search,   // Spring expects 'keyword'
-      category: filters.category,
-      minPrice: filters.minPrice,
-      maxPrice: filters.maxPrice,
-    },
+    params: filters,
   });
   return res.data.content;
 };
@@ -36,30 +38,6 @@ export const searchItems = async (filters: ItemFilters): Promise<Item[]> => {
 export const createItem = async (data: CreateItemRequest): Promise<Item> => {
   const res = await axiosInstance.post('/items', data);
   return res.data;
-};
-
-
-export const uploadItemImage = async (
-  itemId: string,
-  imageUri: string
-): Promise<void> => {
-  const formData = new FormData();
-
-  formData.append('file', {
-    uri: imageUri,
-    name: 'image.jpg',
-    type: 'image/jpeg',
-  } as any);
-
-  await axiosInstance.post(
-    `/items/${itemId}/images`,
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
 };
 
 export const updateItem = async (
@@ -72,4 +50,22 @@ export const updateItem = async (
 
 export const deleteItem = async (id: string): Promise<void> => {
   await axiosInstance.delete(`/items/${id}`);
+};
+
+export const uploadItemImage = async (itemId: string, uri: string): Promise<Item> => {
+  const formData = new FormData();
+  const filename = uri.split('/').pop() || `photo.jpg`;
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+  formData.append('file', {
+    uri,
+    name: filename,
+    type,
+  } as any);
+
+  const res = await axiosInstance.post(`/items/${itemId}/images`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
 };

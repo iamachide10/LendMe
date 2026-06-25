@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text } from 'react-native';
 import { MainTabParamList, HomeStackParamList, InboxStackParamList, BookingsStackParamList } from './types';
-
+import { Ionicons } from '@expo/vector-icons';
 // Tab Screens
 import MyListingsScreen from '../screens/items/MyListingsScreen';
 import InboxScreen from '../screens/messaging/InboxScreen';
@@ -59,10 +59,11 @@ const MainNavigator: React.FC = () => (
       tabBarStyle: {
         backgroundColor: '#16213e',
         borderTopColor: '#0f3460',
-        borderTopWidth: 1,
-        height: 60,
+        borderTopWidth: 4,
+        height: 70,
         paddingBottom: 8,
         paddingTop: 6,
+        paddingHorizontal:8
       },
       tabBarActiveTintColor: '#e94560',
       tabBarInactiveTintColor: '#a0a0b0',
@@ -72,31 +73,43 @@ const MainNavigator: React.FC = () => (
       },
     }}
   >
-    <Tab.Screen
-      name="Home"
-      component={HomeStackNavigator}
-      options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }}
-    />
-    <Tab.Screen
-      name="MyListings"
-      component={MyListingsScreen}
-      options={{ title: 'Listings', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📦</Text> }}
-    />
-    <Tab.Screen
-      name="Inbox"
-      component={InboxStackNavigator}
-      options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💬</Text> }}
-    />
-    <Tab.Screen
-      name="MyBookings"
-      component={BookingsStackNavigator}
-      options={{ title: 'Bookings', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📅</Text> }}
-    />
-    <Tab.Screen
-      name="Profile"
-      component={ProfileScreen}
-      options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text> }}
-    />
+   <Tab.Screen
+  name="Home"
+  component={HomeStackNavigator}
+  options={{
+    tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+  }}
+/>
+<Tab.Screen
+  name="MyListings"
+  component={MyListingsScreen}
+  options={{
+    title: 'Listings',
+    tabBarIcon: ({ color, size }) => <Ionicons name="cube" size={size} color={color} />,
+  }}
+/>
+<Tab.Screen
+  name="Inbox"
+  component={InboxStackNavigator}
+  options={{
+    tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-ellipses" size={size} color={color} />,
+  }}
+/>
+<Tab.Screen
+  name="MyBookings"
+  component={BookingsStackNavigator}
+  options={{
+    title: 'Bookings',
+    tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} />,
+  }}
+/>
+<Tab.Screen
+  name="Profile"
+  component={ProfileScreen}
+  options={{
+    tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+  }}
+/>
   </Tab.Navigator>
 );
 
