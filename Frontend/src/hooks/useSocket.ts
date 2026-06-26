@@ -1,21 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { Client, IMessage } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
-import { WEBSOCKET_URL } from '../utils/constants';
 import { useAuthStore } from '../store/authStore';
 import { Message } from '../types/message.types';
+import { WEBSOCKET_URL } from '../utils/constants';
 
 export const useSocket = (onMessage: (msg: Message) => void) => {
   const clientRef = useRef<Client | null>(null);
   const accessToken = useAuthStore(state => state.accessToken);
 
   useEffect(() => {
+    if (!accessToken) return;
+
     const client = new Client({
-      webSocketFactory: () => new SockJS(WEBSOCKET_URL),
+      brokerURL: WEBSOCKET_URL,
       connectHeaders: {
         Authorization: `Bearer ${accessToken}`,
       },
-      debug: (str) => console.log('STOMP DEBUG:', str),
+      debug: (str) => console.log('STOMP:', str),
+      reconnectDelay: 5000,
       onConnect: () => {
         console.log('STOMP connected!');
         client.subscribe('/user/queue/messages', (frame: IMessage) => {
@@ -29,6 +31,9 @@ export const useSocket = (onMessage: (msg: Message) => void) => {
       onWebSocketError: (err) => {
         console.error('WebSocket error', err);
       },
+      onDisconnect: () => {
+        console.log('STOMP disconnected');
+      },
     });
 
     client.activate();
@@ -40,20 +45,20 @@ export const useSocket = (onMessage: (msg: Message) => void) => {
   }, [accessToken]);
 
   const sendMessage = (receiverId: string, content: string) => {
-  console.log('STOMP connected:', clientRef.current?.connected);
+    console.log('STOMP connected:', clientRef.current?.connected);
 
-  if (!clientRef.current?.connected) {
-    console.log('Socket is NOT connected');
-    return;
-  }
+    if (!clientRef.current?.connected) {
+      console.log('Socket is NOT connected');
+      return;
+    }
 
-  console.log('Publishing message');
+    console.log('Publishing message');
 
-  clientRef.current.publish({
-    destination: '/app/chat.send',
-    body: JSON.stringify({ receiverId, content }),
-  });
-};
+    clientRef.current.publish({
+      destination: '/app/chat.send',
+      body: JSON.stringify({ receiverId, content }),
+    });
+  };
 
   return { sendMessage };
 };
