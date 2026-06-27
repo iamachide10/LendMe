@@ -1,5 +1,4 @@
 package com.lendMe.config;
-
 import com.lendMe.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
