@@ -4,13 +4,14 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text } from 'react-native';
 import { MainTabParamList, HomeStackParamList, InboxStackParamList, BookingsStackParamList } from './types';
 import { Ionicons } from '@expo/vector-icons';
-// Tab Screens
+
+
 import MyListingsScreen from '../screens/items/MyListingsScreen';
 import InboxScreen from '../screens/messaging/InboxScreen';
 import MyBookingsScreen from '../screens/booking/MyBookingsScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 
-// Home Stack Screens
+
 import HomeScreen from '../screens/home/HomeScreen';
 import ItemDetailScreen from '../screens/items/ItemDetailScreen';
 import BookingScreen from '../screens/booking/BookingScreen';
@@ -59,7 +60,7 @@ const MainNavigator: React.FC = () => (
       tabBarStyle: {
         backgroundColor: '#16213e',
         borderTopColor: '#0f3460',
-        borderTopWidth: 4,
+        borderTopWidth: 2,
         height: 70,
         paddingBottom: 8,
         paddingTop: 6,
