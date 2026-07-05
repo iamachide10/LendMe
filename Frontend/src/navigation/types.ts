@@ -15,7 +15,7 @@ export type HomeStackParamList = {
   BookingConfirm: { bookingId: string };
   PaymentSimulation: { bookingId: string; amount: number };
   LeaveReview: { bookingId: string; revieweeId: string; itemId: string };
-  ChatScreen: { conversationId: string; otherUserName: string; receiverId: string };
+ ChatScreen: { conversationId: string; otherUserName: string; receiverId: string };
 };
 
 export type MainTabParamList = {

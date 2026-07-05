@@ -1,63 +1,51 @@
 import { useEffect, useRef } from 'react';
-import { Client, IMessage } from '@stomp/stompjs';
-import { useAuthStore } from '../store/authStore';
 import { Message } from '../types/message.types';
-import { WEBSOCKET_URL } from '../utils/constants';
+import { getMessages } from '../api/messageApi';
 
-export const useSocket = (onMessage: (msg: Message) => void) => {
-  const clientRef = useRef<Client | null>(null);
-  const accessToken = useAuthStore(state => state.accessToken);
+const POLL_INTERVAL = 3000; // Poll every 3 seconds
+
+export const useSocket = (
+  onMessage: (msg: Message) => void,
+  conversationId: string,
+  lastMessageId: string | null
+) => {
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastMessageIdRef = useRef<string | null>(lastMessageId);
 
   useEffect(() => {
-    if (!accessToken) return;
+    lastMessageIdRef.current = lastMessageId;
+  }, [lastMessageId]);
 
-    const client = new Client({
-      brokerURL: WEBSOCKET_URL,
-      connectHeaders: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      debug: (str) => console.log('STOMP:', str),
-      reconnectDelay: 5000,
-      onConnect: () => {
-        console.log('STOMP connected!');
-        client.subscribe('/user/queue/messages', (frame: IMessage) => {
-          const msg: Message = JSON.parse(frame.body);
-          onMessage(msg);
-        });
-      },
-      onStompError: (frame) => {
-        console.error('STOMP error', frame);
-      },
-      onWebSocketError: (err) => {
-        console.error('WebSocket error', err);
-      },
-      onDisconnect: () => {
-        console.log('STOMP disconnected');
-      },
-    });
+  useEffect(() => {
+    if (!conversationId) return;
 
-    client.activate();
-    clientRef.current = client;
+    const poll = async () => {
+      try {
+        const messages = await getMessages(conversationId);
+        if (messages.length > 0) {
+          const latest = messages[messages.length - 1];
+          if (latest.id !== lastMessageIdRef.current) {
+            lastMessageIdRef.current = latest.id;
+            onMessage(latest);
+          }
+        }
+      } catch {
+        console.error('Polling failed');
+      }
+    };
+
+    intervalRef.current = setInterval(poll, POLL_INTERVAL);
 
     return () => {
-      client.deactivate();
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     };
-  }, [accessToken]);
+  }, [conversationId]);
 
-  const sendMessage = (receiverId: string, content: string) => {
-    console.log('STOMP connected:', clientRef.current?.connected);
-
-    if (!clientRef.current?.connected) {
-      console.log('Socket is NOT connected');
-      return;
-    }
-
-    console.log('Publishing message');
-
-    clientRef.current.publish({
-      destination: '/app/chat.send',
-      body: JSON.stringify({ receiverId, content }),
-    });
+  const sendMessage = async (receiverId: string, content: string) => {
+    const { sendMessageRest } = await import('../api/messageApi');
+    return sendMessageRest(receiverId, content);
   };
 
   return { sendMessage };

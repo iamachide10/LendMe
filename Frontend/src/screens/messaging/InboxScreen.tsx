@@ -53,9 +53,10 @@ const InboxScreen: React.FC = () => {
   navigation.navigate('ChatScreen', {
     conversationId: item.id,
     otherUserName: item.otherUserName,
-    receiverId: item.otherUserId,  // ← add this
+    receiverId: item.otherUserId,
   }
-    )
+    
+)
       }
     >
       <View style={styles.avatar}>

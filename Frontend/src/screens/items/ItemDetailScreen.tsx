@@ -49,7 +49,7 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#e94560" />
+        <ActivityIndicator size="large" color="#fa062f" />
       </View>
     );
   }
@@ -123,12 +123,11 @@ const ItemDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           try {
             const conversation = await startConversation(item.ownerId);
 
-            navigation.navigate('ChatScreen', {
-              conversationId: conversation.id,
-              receiverId: conversation.otherUserId,
-              otherUserName: conversation.otherUserName,
-            });
-          } catch (error) {
+         navigation.navigate('ChatScreen', {
+        conversationId: '',
+        otherUserName: item.ownerName,
+        receiverId: item.ownerId,
+      }); } catch (error) {
             console.error('Failed to start conversation', error);
           }
         }}

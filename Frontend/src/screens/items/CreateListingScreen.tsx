@@ -236,7 +236,6 @@ const CreateListingScreen: React.FC<Props> = ({ navigation, route }) => {
             </ScrollView>
           </>
         )}
-
         {/* New Images */}
         <Text style={styles.label}>
           {isEditMode ? 'Add More Photos' : 'Photos (up to 5)'}

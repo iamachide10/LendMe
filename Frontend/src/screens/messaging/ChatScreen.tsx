@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,85 +9,102 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSocket } from '../../hooks/useSocket';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../../navigation/types';
-import { getMessages ,markConversationAsRead } from '../../api/messageApi';
+import { getMessages, markConversationAsRead } from '../../api/messageApi';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
 import { Message } from '../../types/message.types';
-import { WEBSOCKET_URL } from '../../utils/constants';
 import ChatBubble from '../../components/messaging/ChatBubble';
-import TypingIndicator from '../../components/messaging/TypingIndicator';
-import { io, Socket } from 'socket.io-client';
-
+import { useSocket } from '../../hooks/useSocket';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ChatScreen'>;
 
 const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { conversationId, otherUserName } = route.params;
+  const { conversationId, otherUserName, receiverId } = route.params;
   const { activeMessages, setActiveMessages, appendMessage } = useMessageStore();
   const user = useAuthStore(state => state.user);
-  const accessToken = useAuthStore(state => state.accessToken);
 
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
+  const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
-  const socketRef = useRef<Socket | null>(null);
 
+  const lastMessageId = activeMessages.length > 0
+    ? activeMessages[activeMessages.length - 1].id
+    : null;
 
-const { sendMessage } = useSocket((msg: Message) => {
-  console.log('WS message received:', JSON.stringify(msg));
-  if (msg.conversationId === conversationId) {
-    appendMessage(msg);
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-  }
-});
-useEffect(() => {
-  const fetchMessages = async () => {
-    try {
-      const data = await getMessages(conversationId);
-      setActiveMessages(data);
-      await markConversationAsRead(conversationId); // ← add this
-    } catch {
-      console.error('Failed to load messages');
-    } finally {
-      setLoading(false);
+  const handleNewMessage = useCallback((msg: Message) => {
+    if (msg.senderId !== user?.id) {
+      appendMessage(msg);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
-  };
+  }, [user?.id]);
 
-  fetchMessages();
+  const { sendMessage } = useSocket(handleNewMessage, conversationId, lastMessageId);
 
-  return () => setActiveMessages([]);
-}, [conversationId]);
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const data = await getMessages(conversationId);
+        setActiveMessages(data);
+        await markConversationAsRead(conversationId);
+      } catch {
+        console.error('Failed to load messages');
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchMessages();
 
-const handleSend = () => {
-  console.log("Send button pressed");
+    return () => setActiveMessages([]);
+  }, [conversationId]);
 
-  if (!message.trim()) {
-    console.log("Message is empty");
-    return;
-  }
+  useEffect(() => {
+    if (activeMessages.length > 0) {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 100);
+    }
+  }, [activeMessages.length]);
 
-  console.log("receiverId:", route.params.receiverId);
-  console.log("message:", message);
+  const handleSend = async () => {
+    if (!message.trim() || sending) return;
 
-  sendMessage(route.params.receiverId, message.trim());
-  setMessage('');
-};
+    const content = message.trim();
+    setMessage('');
+    setSending(true);
 
-//   const handleTyping = (text: string) => {
-//   setMessage(text);
-// };
+    // Optimistic update
+    const optimisticMsg: Message = {
+      id: `temp-${Date.now()}`,
+      conversationId,
+      senderId: user?.id || '',
+      senderName: user?.name || '',
+      content,
+      isRead: false,
+      sentAt: new Date().toISOString(),
+    };
+    appendMessage(optimisticMsg);
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
-  const handleTyping = (text: string) => {
-    setMessage(text);
-    socketRef.current?.emit('typing', { conversationId });
+    try {
+      const saved = await sendMessage(receiverId, content);
+      // Replace optimistic message with real one
+      setActiveMessages(
+        activeMessages
+          .filter(m => m.id !== optimisticMsg.id)
+          .concat(saved)
+      );
+    } catch {
+      Alert.alert('Error', 'Failed to send message');
+      // Remove optimistic message on failure
+      setActiveMessages(activeMessages.filter(m => m.id !== optimisticMsg.id));
+    } finally {
+      setSending(false);
+    }
   };
 
   const renderItem = ({ item }: { item: Message }) => (
@@ -112,13 +129,11 @@ const handleSend = () => {
         <View style={{ width: 50 }} />
       </View>
 
-        <KeyboardAvoidingView
+      <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={90}
       >
-
-        {/* Messages */}
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color="#e94560" />
@@ -133,7 +148,6 @@ const handleSend = () => {
             onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: true })
             }
-            ListFooterComponent={isTyping ? <TypingIndicator /> : null}
           />
         )}
 
@@ -144,18 +158,22 @@ const handleSend = () => {
             placeholder="Type a message..."
             placeholderTextColor="#666"
             value={message}
-            onChangeText={handleTyping}
+            onChangeText={setMessage}
             multiline
           />
           <TouchableOpacity
             style={[
               styles.sendButton,
-              !message.trim() ? styles.sendButtonDisabled : null,
+              (!message.trim() || sending) ? styles.sendButtonDisabled : null,
             ]}
             onPress={handleSend}
-            disabled={!message.trim()}
+            disabled={!message.trim() || sending}
           >
-            <Text style={styles.sendButtonText}>Send</Text>
+            {sending ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.sendButtonText}>Send</Text>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -243,6 +261,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 10,
+    minWidth: 60,
+    alignItems: 'center',
   },
   sendButtonDisabled: {
     opacity: 0.4,

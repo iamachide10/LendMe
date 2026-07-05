@@ -11,16 +11,22 @@ export const getMessages = async (conversationId: string): Promise<Message[]> =>
   return res.data;
 };
 
-export const markConversationAsRead = async (conversationId: string): Promise<void> => {
-  await axiosInstance.put(`/conversations/${conversationId}/read`);
+export const sendMessageRest = async (
+  receiverId: string,
+  content: string
+): Promise<Message> => {
+  const res = await axiosInstance.post('/conversations/send', {
+    receiverId,
+    content,
+  });
+  return res.data;
 };
 
-export const startConversation = async (
-  receiverId: string
-): Promise<Conversation> => {
-  const response = await axiosInstance.post<Conversation>(
-    `/conversations/start/${receiverId}`
-  );
+export const startConversation = async (receiverId: string): Promise<Conversation> => {
+  const res = await axiosInstance.post(`/conversations/start/${receiverId}`);
+  return res.data;
+};
 
-  return response.data;
+export const markConversationAsRead = async (conversationId: string): Promise<void> => {
+  await axiosInstance.put(`/conversations/${conversationId}/read`);
 };
