@@ -16,6 +16,8 @@ public class BookingResponseDto {
     private String itemTitle;
     private UUID borrowerId;
     private String borrowerName;
+    private UUID ownerId;
+    private String ownerName;
     private LocalDate startDate;
     private LocalDate endDate;
     private BigDecimal totalPrice;

@@ -1,10 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Animated, StyleSheet } from 'react-native';
+import { useTheme, ThemeColors } from '../../theme';
 
 const TypingIndicator: React.FC = () => {
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const animateDot = (dot: Animated.Value, delay: number) => {
     return Animated.loop(
@@ -52,14 +55,15 @@ const TypingIndicator: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     marginHorizontal: 16,
     marginVertical: 4,
     alignItems: 'flex-start',
   },
   bubble: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderBottomLeftRadius: 4,
     padding: 12,
@@ -71,7 +75,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#a0a0b0',
+    backgroundColor: colors.textMuted,
   },
 });
 

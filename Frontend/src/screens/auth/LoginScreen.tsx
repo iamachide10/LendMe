@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -16,11 +16,14 @@ import { loginUser } from '../../api/authApi';
 import { saveTokens } from '../../utils/tokenStorage';
 import { useAuthStore } from '../../store/authStore';
 import { getEmailError, getPasswordError } from '../../utils/validators';
+import { useTheme, ThemeColors } from '../../theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const setAuth = useAuthStore(state => state.setAuth);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,7 +61,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.logo}>UniSwap</Text>
+      <Text style={styles.logo}>LendMe</Text>
       <Text style={styles.subtitle}>Sign in to your account</Text>
 
       <View style={styles.form}>
@@ -66,7 +69,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <TextInput
           style={[styles.input, emailError ? styles.inputError : null]}
           placeholder="you@knust.edu.gh"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.placeholder}
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
@@ -81,7 +84,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <TextInput
           style={[styles.input, passwordError ? styles.inputError : null]}
           placeholder="Enter your password"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.placeholder}
           secureTextEntry
           value={password}
           onChangeText={text => {
@@ -97,7 +100,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.primaryContrast} />
           ) : (
             <Text style={styles.buttonText}>Sign In</Text>
           )}
@@ -117,58 +120,59 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
   logo: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#e94560',
+    color: colors.primary,
     textAlign: 'center',
     letterSpacing: 2,
   },
   subtitle: {
     fontSize: 14,
-    color: '#a0a0b0',
+    color: colors.textMuted,
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 32,
   },
   form: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 24,
   },
   label: {
     fontSize: 13,
-    color: '#a0a0b0',
+    color: colors.textMuted,
     marginBottom: 6,
     marginTop: 12,
   },
   input: {
-    backgroundColor: '#0f3460',
+    backgroundColor: colors.inputBackground,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#fff',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: colors.inputBackground,
   },
   inputError: {
-    borderColor: '#e94560',
+    borderColor: colors.error,
   },
   errorText: {
-    color: '#e94560',
+    color: colors.error,
     fontSize: 12,
     marginTop: 4,
   },
   button: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -178,7 +182,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -187,11 +191,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   registerText: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
   },
   registerTextBold: {
-    color: '#e94560',
+    color: colors.primary,
     fontWeight: 'bold',
   },
 });

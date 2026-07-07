@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { useBookingStore } from '../../store/bookingStore';
 import { Item } from '../../types/item.types';
 import { calcRentalPrice, formatDate } from '../../utils/dateHelpers';
 import BookingCalendar from '../../components/booking/BookingCalendar';
+import { useTheme, ThemeColors } from '../../theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'BookingScreen'>;
 
@@ -24,6 +25,8 @@ const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
   const { itemId } = route.params;
   const { selectedStartDate, selectedEndDate, setSelectedDates, clearDates } =
     useBookingStore();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [item, setItem] = useState<Item | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,7 +91,7 @@ const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#e94560" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -161,7 +164,7 @@ const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
           disabled={booking || !selectedStartDate || !selectedEndDate}
         >
           {booking ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.primaryContrast} />
           ) : (
             <Text style={styles.bookButtonText}>
               {totalPrice ? `Book for GH₵ ${totalPrice.toFixed(2)}` : 'Book Now'}
@@ -173,16 +176,17 @@ const BookingScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -192,11 +196,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backText: {
-    color: '#e94560',
+    color: colors.primary,
     fontSize: 14,
   },
   headerTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -204,24 +208,24 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 16,
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 12,
   },
   itemTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   itemPrice: {
-    color: '#e94560',
+    color: colors.primary,
     fontSize: 14,
   },
   dateSummary: {
     flexDirection: 'row',
     marginHorizontal: 16,
     marginTop: 16,
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
   },
@@ -231,16 +235,16 @@ const styles = StyleSheet.create({
   },
   dateDivider: {
     width: 1,
-    backgroundColor: '#0f3460',
+    backgroundColor: colors.border,
     marginHorizontal: 8,
   },
   dateLabel: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 12,
     marginBottom: 6,
   },
   dateValue: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -251,26 +255,26 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 12,
     padding: 16,
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 12,
   },
   priceSummaryLabel: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 14,
   },
   priceSummaryValue: {
-    color: '#e94560',
+    color: colors.primary,
     fontSize: 18,
     fontWeight: 'bold',
   },
   footer: {
     padding: 16,
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#0f3460',
+    borderTopColor: colors.border,
   },
   bookButton: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -279,7 +283,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   bookButtonText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 16,
     fontWeight: 'bold',
   },

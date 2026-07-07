@@ -11,6 +11,7 @@ public class ConversationDto {
     private UUID id;
     private UUID otherUserId;
     private String otherUserName;
+    private String otherUserPhoto;
     private String lastMessage;
     private Integer unreadCount;
     private LocalDateTime createdAt;

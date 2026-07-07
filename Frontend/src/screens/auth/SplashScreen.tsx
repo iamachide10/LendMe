@@ -1,15 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { getAccessToken, getRefreshToken, saveTokens } from '../../utils/tokenStorage';
 import { refreshTokens } from '../../api/authApi';
 import { useAuthStore } from '../../store/authStore';
+import { useTheme, ThemeColors } from '../../theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Splash'>;
 
 const SplashScreen: React.FC<Props> = ({ navigation }) => {
   const setAuth = useAuthStore(state => state.setAuth);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   useEffect(() => {
     const checkToken = async () => {
@@ -40,22 +43,23 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   logo: {
     fontSize: 42,
     fontWeight: 'bold',
-    color: '#e94560',
+    color: colors.primary,
     letterSpacing: 2,
   },
   tagline: {
     fontSize: 14,
-    color: '#a0a0b0',
+    color: colors.textMuted,
     marginTop: 8,
     letterSpacing: 1,
   },

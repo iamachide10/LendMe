@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,18 +19,27 @@ import {
 } from '../../api/bookingApi';
 import { Booking, BookingStatus } from '../../types/booking.types';
 import { formatDate } from '../../utils/dateHelpers';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BookingsStackParamList } from '../../navigation/types';
+import { useTheme, ThemeColors } from '../../theme';
 
-const STATUS_COLORS: Record<BookingStatus, string> = {
-  PENDING: '#f0a500',
-  APPROVED: '#4ecca3',
-  REJECTED: '#e94560',
-  PAID: '#4ecca3',
-  ACTIVE: '#4ecca3',
-  COMPLETED: '#a0a0b0',
-  CANCELLED: '#e94560',
-};
+const getStatusColors = (colors: ThemeColors): Record<BookingStatus, string> => ({
+  PENDING: colors.warning,
+  APPROVED: colors.success,
+  REJECTED: colors.error,
+  PAID: colors.success,
+  ACTIVE: colors.success,
+  COMPLETED: colors.textMuted,
+  CANCELLED: colors.error,
+});
 
 const MyBookingsScreen: React.FC = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<BookingsStackParamList>>();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const statusColors = useMemo(() => getStatusColors(colors), [colors]);
   const [activeTab, setActiveTab] = useState<'mine' | 'lender'>('mine');
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [lenderBookings, setLenderBookings] = useState<Booking[]>([]);
@@ -87,7 +96,12 @@ const MyBookingsScreen: React.FC = () => {
   };
 
   const handleUpdateStatus = (bookingId: string, status: BookingStatus) => {
-    const label = status === 'APPROVED' ? 'Approve' : 'Reject';
+    const label =
+      status === 'APPROVED'
+        ? 'Approve'
+        : status === 'COMPLETED'
+        ? 'Complete'
+        : 'Reject';
     Alert.alert(`${label} Booking`, `Are you sure you want to ${label.toLowerCase()} this booking?`, [
       { text: 'No', style: 'cancel' },
       {
@@ -107,33 +121,47 @@ const MyBookingsScreen: React.FC = () => {
     ]);
   };
 
-  const renderBorrowerItem = ({ item }: { item: Booking }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.itemTitle} numberOfLines={1}>
-          {item.itemTitle}
+const renderBorrowerItem = ({ item }: { item: Booking }) => (
+  <View style={styles.card}>
+    <View style={styles.cardHeader}>
+      <Text style={styles.itemTitle} numberOfLines={1}>
+        {item.itemTitle}
+      </Text>
+      <View style={[styles.statusBadge, { backgroundColor: statusColors[item.status] + '22' }]}>
+        <Text style={[styles.statusText, { color: statusColors[item.status] }]}>
+          {item.status}
         </Text>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + '22' }]}>
-          <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>
-            {item.status}
-          </Text>
-        </View>
       </View>
+    </View>
 
-      <View style={styles.dateRow}>
-        <View style={styles.dateBox}>
-          <Text style={styles.dateLabel}>Check In</Text>
-          <Text style={styles.dateValue}>{formatDate(item.startDate)}</Text>
-        </View>
-        <Text style={styles.dateArrow}>→</Text>
-        <View style={styles.dateBox}>
-          <Text style={styles.dateLabel}>Check Out</Text>
-          <Text style={styles.dateValue}>{formatDate(item.endDate)}</Text>
-        </View>
+    <View style={styles.dateRow}>
+      <View style={styles.dateBox}>
+        <Text style={styles.dateLabel}>Check In</Text>
+        <Text style={styles.dateValue}>{formatDate(item.startDate)}</Text>
       </View>
+      <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
+      <View style={styles.dateBox}>
+        <Text style={styles.dateLabel}>Check Out</Text>
+        <Text style={styles.dateValue}>{formatDate(item.endDate)}</Text>
+      </View>
+    </View>
 
-      <View style={styles.cardFooter}>
-        <Text style={styles.totalPrice}>GH₵ {item.totalPrice.toFixed(2)}</Text>
+    <View style={styles.cardFooter}>
+      <Text style={styles.totalPrice}>GH₵ {item.totalPrice.toFixed(2)}</Text>
+      <View style={styles.actionButtons}>
+        {item.status === 'APPROVED' && (
+          <TouchableOpacity
+            style={styles.approveButton}
+            onPress={() =>
+              navigation.navigate('PaymentSimulation', {
+                bookingId: item.id,
+                amount: item.totalPrice,
+              })
+            }
+          >
+            <Text style={styles.approveButtonText}>Pay Now</Text>
+          </TouchableOpacity>
+        )}
         {(item.status === 'PENDING' || item.status === 'APPROVED') && (
           <TouchableOpacity
             style={styles.cancelButton}
@@ -142,9 +170,25 @@ const MyBookingsScreen: React.FC = () => {
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         )}
+        {item.status === 'COMPLETED' && (
+          <TouchableOpacity
+            style={styles.reviewButton}
+            onPress={() =>
+              navigation.navigate('LeaveReview', {
+                bookingId: item.id,
+                revieweeId: item.ownerId,
+                itemId: item.itemId,
+              })
+            }
+          >
+            <Ionicons name="star" size={14} color={colors.primaryContrast} />
+            <Text style={styles.reviewButtonText}>Leave Review</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
-  );
+  </View>
+);
 
   const renderLenderItem = ({ item }: { item: Booking }) => (
     <View style={styles.card}>
@@ -152,8 +196,8 @@ const MyBookingsScreen: React.FC = () => {
         <Text style={styles.itemTitle} numberOfLines={1}>
           {item.itemTitle}
         </Text>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + '22' }]}>
-          <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>
+        <View style={[styles.statusBadge, { backgroundColor: statusColors[item.status] + '22' }]}>
+          <Text style={[styles.statusText, { color: statusColors[item.status] }]}>
             {item.status}
           </Text>
         </View>
@@ -168,7 +212,7 @@ const MyBookingsScreen: React.FC = () => {
           <Text style={styles.dateLabel}>Check In</Text>
           <Text style={styles.dateValue}>{formatDate(item.startDate)}</Text>
         </View>
-        <Text style={styles.dateArrow}>→</Text>
+        <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
         <View style={styles.dateBox}>
           <Text style={styles.dateLabel}>Check Out</Text>
           <Text style={styles.dateValue}>{formatDate(item.endDate)}</Text>
@@ -192,6 +236,14 @@ const MyBookingsScreen: React.FC = () => {
               <Text style={styles.approveButtonText}>Approve</Text>
             </TouchableOpacity>
           </View>
+        )}
+        {(item.status === 'PAID' || item.status === 'ACTIVE') && (
+          <TouchableOpacity
+            style={styles.approveButton}
+            onPress={() => handleUpdateStatus(item.id, 'COMPLETED')}
+          >
+            <Text style={styles.approveButtonText}>Mark Completed</Text>
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -229,7 +281,7 @@ const MyBookingsScreen: React.FC = () => {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#e94560" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : currentData.length === 0 ? (
         <View style={styles.centered}>
@@ -249,7 +301,7 @@ const MyBookingsScreen: React.FC = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#e94560"
+              tintColor={colors.primary}
             />
           }
         />
@@ -258,17 +310,18 @@ const MyBookingsScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   headerTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 20,
     fontWeight: 'bold',
   },
@@ -276,7 +329,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 4,
   },
@@ -287,23 +340,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabActive: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
   },
   tabText: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontWeight: 'bold',
   },
   list: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   card: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -315,7 +368,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   itemTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 15,
     fontWeight: 'bold',
     flex: 1,
@@ -331,19 +384,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   borrowerName: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
     marginBottom: 10,
   },
   borrowerNameBold: {
-    color: '#fff',
+    color: colors.text,
     fontWeight: 'bold',
   },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
-    backgroundColor: '#0f3460',
+    backgroundColor: colors.inputBackground,
     borderRadius: 8,
     padding: 12,
   },
@@ -351,17 +404,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateArrow: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 16,
     marginHorizontal: 8,
   },
   dateLabel: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 11,
     marginBottom: 4,
   },
   dateValue: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -371,19 +424,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   totalPrice: {
-    color: '#e94560',
+    color: colors.primary,
     fontSize: 16,
     fontWeight: 'bold',
   },
   cancelButton: {
     borderWidth: 1,
-    borderColor: '#e94560',
+    borderColor: colors.error,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
   cancelButtonText: {
-    color: '#e94560',
+    color: colors.error,
     fontSize: 13,
     fontWeight: 'bold',
   },
@@ -393,24 +446,38 @@ const styles = StyleSheet.create({
   },
   rejectButton: {
     borderWidth: 1,
-    borderColor: '#e94560',
+    borderColor: colors.error,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
   rejectButtonText: {
-    color: '#e94560',
+    color: colors.error,
     fontSize: 13,
     fontWeight: 'bold',
   },
   approveButton: {
-    backgroundColor: '#4ecca3',
+    backgroundColor: colors.success,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
+  reviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  reviewButtonText: {
+    color: colors.primaryContrast,
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
   approveButtonText: {
-    color: '#1a1a2e',
+    color: '#fff',
     fontSize: 13,
     fontWeight: 'bold',
   },
@@ -421,7 +488,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyText: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 15,
     textAlign: 'center',
   },

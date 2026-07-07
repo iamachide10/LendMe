@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../../navigation/types';
 import axiosInstance from '../../api/axiosInstance';
+import { useTheme, ThemeColors } from '../../theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'PaymentSimulation'>;
 
@@ -19,6 +20,8 @@ const PaymentSimulationScreen: React.FC<Props> = ({ route, navigation }) => {
   const { bookingId, amount } = route.params;
   const [loading, setLoading] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const paymentMethods = [
     { id: 'momo', label: 'MTN Mobile Money', icon: '📱' },
@@ -116,7 +119,7 @@ const PaymentSimulationScreen: React.FC<Props> = ({ route, navigation }) => {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.primaryContrast} />
           ) : (
             <Text style={styles.payButtonText}>
               Pay GH₵ {amount.toFixed(2)}
@@ -128,10 +131,11 @@ const PaymentSimulationScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   scroll: {
     padding: 16,
@@ -144,46 +148,46 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   backText: {
-    color: '#e94560',
+    color: colors.primary,
     fontSize: 14,
   },
   headerTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 16,
     fontWeight: 'bold',
   },
   amountCard: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     marginBottom: 24,
   },
   amountLabel: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
     marginBottom: 8,
   },
   amountValue: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 36,
     fontWeight: 'bold',
     marginBottom: 12,
   },
   demoBadge: {
-    backgroundColor: '#f0a50022',
+    backgroundColor: colors.warningMuted,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
   },
   demoBadgeText: {
-    color: '#f0a500',
+    color: colors.warning,
     fontSize: 11,
     fontWeight: 'bold',
     letterSpacing: 1,
   },
   sectionTitle: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: 'bold',
     textTransform: 'uppercase',
@@ -193,15 +197,15 @@ const styles = StyleSheet.create({
   methodCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: colors.border,
   },
   methodCardActive: {
-    borderColor: '#e94560',
+    borderColor: colors.primary,
   },
   methodIcon: {
     fontSize: 24,
@@ -209,7 +213,7 @@ const styles = StyleSheet.create({
   },
   methodLabel: {
     flex: 1,
-    color: '#fff',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '500',
   },
@@ -218,35 +222,35 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#0f3460',
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   radioActive: {
-    borderColor: '#e94560',
+    borderColor: colors.primary,
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
   },
   noteCard: {
-    backgroundColor: '#0f346022',
+    backgroundColor: colors.primaryMuted,
     borderRadius: 10,
     padding: 14,
     marginTop: 8,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: colors.border,
   },
   noteText: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
     lineHeight: 20,
   },
   payButton: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -255,7 +259,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   payButtonText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 16,
     fontWeight: 'bold',
   },

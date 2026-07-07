@@ -1,9 +1,11 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text } from 'react-native';
+import { getFocusedRouteNameFromRoute, RouteProp } from '@react-navigation/native';
+import { ViewStyle } from 'react-native';
 import { MainTabParamList, HomeStackParamList, InboxStackParamList, BookingsStackParamList } from './types';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme, ThemeColors } from '../theme';
 
 
 import MyListingsScreen from '../screens/items/MyListingsScreen';
@@ -34,7 +36,6 @@ const HomeStackNavigator: React.FC = () => (
     <HomeStack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
     <HomeStack.Screen name="CreateListing" component={CreateListingScreen} />
     <HomeStack.Screen name="ChatScreen" component={ChatScreen} />
-    <HomeStack.Screen name="LeaveReview" component={LeaveReviewScreen} />
     <HomeStack.Screen name="PaymentSimulation" component={PaymentSimulationScreen} />
   </HomeStack.Navigator>
 );
@@ -50,24 +51,50 @@ const BookingsStackNavigator: React.FC = () => (
   <BookingsStack.Navigator screenOptions={{ headerShown: false }}>
     <BookingsStack.Screen name="MyBookingsScreen" component={MyBookingsScreen} />
     <BookingsStack.Screen name="PaymentSimulation" component={PaymentSimulationScreen} />
+    <BookingsStack.Screen name="LeaveReview" component={LeaveReviewScreen} />
   </BookingsStack.Navigator>
 );
 
-const MainNavigator: React.FC = () => (
+const makeFloatingTabBar = (colors: ThemeColors): ViewStyle => ({
+  position: 'absolute',
+  bottom: 24,
+  left: 16,
+  right: 16,
+  height: 64,
+  borderRadius: 32,
+  backgroundColor: colors.card,
+  borderTopWidth: 0,
+  paddingBottom: 10,
+  paddingTop: 10,
+  paddingHorizontal: 8,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 8 },
+  shadowOpacity: 0.2,
+  shadowRadius: 16,
+  elevation: 12,
+});
+
+// Hide the floating bar on nested screens (chat input, item detail
+// footer, etc. would otherwise sit behind it)
+const isOnNestedScreen = (
+  route: RouteProp<MainTabParamList, keyof MainTabParamList>,
+  rootScreen: string
+): boolean => {
+  const focused = getFocusedRouteNameFromRoute(route) ?? rootScreen;
+  return focused !== rootScreen;
+};
+
+const MainNavigator: React.FC = () => {
+  const { colors } = useTheme();
+  const floatingTabBar = makeFloatingTabBar(colors);
+
+  return (
   <Tab.Navigator
     screenOptions={{
       headerShown: false,
-      tabBarStyle: {
-        backgroundColor: '#16213e',
-        borderTopColor: '#0f3460',
-        borderTopWidth: 2,
-        height: 70,
-        paddingBottom: 8,
-        paddingTop: 6,
-        paddingHorizontal:8
-      },
-      tabBarActiveTintColor: '#e94560',
-      tabBarInactiveTintColor: '#a0a0b0',
+      tabBarStyle: floatingTabBar,
+      tabBarActiveTintColor: colors.primary,
+      tabBarInactiveTintColor: colors.textMuted,
       tabBarLabelStyle: {
         fontSize: 11,
         fontWeight: '600',
@@ -77,9 +104,10 @@ const MainNavigator: React.FC = () => (
    <Tab.Screen
   name="Home"
   component={HomeStackNavigator}
-  options={{
+  options={({ route }) => ({
     tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
-  }}
+    tabBarStyle: [floatingTabBar, isOnNestedScreen(route, 'HomeScreen') && { display: 'none' }],
+  })}
 />
 <Tab.Screen
   name="MyListings"
@@ -92,17 +120,19 @@ const MainNavigator: React.FC = () => (
 <Tab.Screen
   name="Inbox"
   component={InboxStackNavigator}
-  options={{
+  options={({ route }) => ({
     tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-ellipses" size={size} color={color} />,
-  }}
+    tabBarStyle: [floatingTabBar, isOnNestedScreen(route, 'InboxScreen') && { display: 'none' }],
+  })}
 />
 <Tab.Screen
   name="MyBookings"
   component={BookingsStackNavigator}
-  options={{
+  options={({ route }) => ({
     title: 'Bookings',
     tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} />,
-  }}
+    tabBarStyle: [floatingTabBar, isOnNestedScreen(route, 'MyBookingsScreen') && { display: 'none' }],
+  })}
 />
 <Tab.Screen
   name="Profile"
@@ -112,6 +142,7 @@ const MainNavigator: React.FC = () => (
   }}
 />
   </Tab.Navigator>
-);
+  );
+};
 
 export default MainNavigator;

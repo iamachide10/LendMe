@@ -40,5 +40,5 @@ export interface ItemFilters {
   category?: ItemCategory;
   minPrice?: number;
   maxPrice?: number;
-  search?: string;
+  keyword?: string;
 }

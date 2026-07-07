@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,12 +17,15 @@ import { HomeStackParamList } from '../../navigation/types';
 import { createItem, updateItem, getItemById, uploadItemImage } from '../../api/itemsApi';
 import { ItemCategory } from '../../types/item.types';
 import { ITEM_CATEGORIES, BASE_URL } from '../../utils/constants';
+import { useTheme, ThemeColors } from '../../theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'CreateListing'>;
 
 const CreateListingScreen: React.FC<Props> = ({ navigation, route }) => {
   const itemId = route.params?.itemId;
   const isEditMode = !!itemId;
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -78,23 +81,33 @@ const CreateListingScreen: React.FC<Props> = ({ navigation, route }) => {
     return !tErr && !dErr && !cErr && !pErr;
   };
 
-  const handlePickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      quality: 0.7,
-    });
+ const handlePickImage = async () => {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert(
+      'Permission Required',
+      'Please allow access to your photo library in Settings to upload images.',
+      [{ text: 'OK' }]
+    );
+    return;
+  }
 
-    if (!result.canceled) {
-      const uris = result.assets.map(a => a.uri);
-      const totalCount = existingImages.length + newImages.length + uris.length;
-      if (totalCount > 5) {
-        Alert.alert('Limit Reached', 'You can have up to 5 photos total');
-        return;
-      }
-      setNewImages(prev => [...prev, ...uris]);
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsMultipleSelection: true,
+    quality: 0.7,
+  });
+
+  if (!result.canceled) {
+    const uris = result.assets.map(a => a.uri);
+    const totalCount = existingImages.length + newImages.length + uris.length;
+    if (totalCount > 5) {
+      Alert.alert('Limit Reached', 'You can have up to 5 photos total');
+      return;
     }
-  };
+    setNewImages(prev => [...prev, ...uris]);
+  }
+};
 
   const handleSubmit = async () => {
     if (!validate()) return;
@@ -143,7 +156,7 @@ const CreateListingScreen: React.FC<Props> = ({ navigation, route }) => {
   if (initialLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#e94560" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -167,7 +180,7 @@ const CreateListingScreen: React.FC<Props> = ({ navigation, route }) => {
         <TextInput
           style={[styles.input, titleError ? styles.inputError : null]}
           placeholder="e.g. Canon DSLR Camera"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.placeholder}
           value={title}
           onChangeText={text => { setTitle(text); setTitleError(null); }}
         />
@@ -178,7 +191,7 @@ const CreateListingScreen: React.FC<Props> = ({ navigation, route }) => {
         <TextInput
           style={[styles.input, styles.textArea, descError ? styles.inputError : null]}
           placeholder="Describe your item, condition, what's included..."
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.placeholder}
           multiline
           numberOfLines={4}
           value={description}
@@ -216,7 +229,7 @@ const CreateListingScreen: React.FC<Props> = ({ navigation, route }) => {
         <TextInput
           style={[styles.input, priceError ? styles.inputError : null]}
           placeholder="e.g. 50"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.placeholder}
           keyboardType="numeric"
           value={dailyPrice}
           onChangeText={text => { setDailyPrice(text); setPriceError(null); }}
@@ -267,7 +280,7 @@ const CreateListingScreen: React.FC<Props> = ({ navigation, route }) => {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.primaryContrast} />
           ) : (
             <Text style={styles.submitButtonText}>
               {isEditMode ? 'Save Changes' : 'Post Listing'}
@@ -279,16 +292,17 @@ const CreateListingScreen: React.FC<Props> = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   scroll: {
     padding: 16,
@@ -301,39 +315,39 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   backText: {
-    color: '#e94560',
+    color: colors.primary,
     fontSize: 14,
   },
   headerTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 16,
     fontWeight: 'bold',
   },
   label: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
     marginBottom: 6,
     marginTop: 16,
   },
   input: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#fff',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: colors.border,
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
   inputError: {
-    borderColor: '#e94560',
+    borderColor: colors.error,
   },
   errorText: {
-    color: '#e94560',
+    color: colors.error,
     fontSize: 12,
     marginTop: 4,
   },
@@ -346,25 +360,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: colors.border,
   },
   categoryChipActive: {
-    backgroundColor: '#e94560',
-    borderColor: '#e94560',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   categoryChipText: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
   },
   categoryChipTextActive: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontWeight: 'bold',
   },
   imagePickerButton: {
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     borderRadius: 8,
     paddingVertical: 16,
@@ -372,7 +386,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   imagePickerText: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 14,
   },
   imagePreviewRow: {
@@ -391,7 +405,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     right: 4,
-    backgroundColor: '#e94560',
+    backgroundColor: colors.error,
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -404,7 +418,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   submitButton: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -414,7 +428,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 16,
     fontWeight: 'bold',
   },

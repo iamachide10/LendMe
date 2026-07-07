@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { useAuthStore } from '../../store/authStore';
 import { Item, ItemCategory } from '../../types/item.types';
 import ItemCard from '../../components/items/ItemCard';
 import CategoryPicker from '../../components/items/CategoryPicker';
+import { useTheme, ThemeColors } from '../../theme';
 
 type NavProp = NativeStackNavigationProp<HomeStackParamList, 'HomeScreen'>;
 
@@ -26,6 +27,8 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const { items, setItems, filters, setFilters } = useItemStore();
   const user = useAuthStore(state => state.user);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,7 +53,7 @@ const HomeScreen: React.FC = () => {
       return;
     }
     try {
-      const data = await searchItems({ ...filters, search: text.trim() });
+      const data = await searchItems({ ...filters, keyword: text.trim() });
       setItems(data);
     } catch (err) {
       console.error('Search failed', err);
@@ -60,7 +63,7 @@ const HomeScreen: React.FC = () => {
   const handleCategorySelect = async (category: ItemCategory | undefined) => {
     setFilters({ category });
     try {
-      const data = await searchItems({ category, search: searchText.trim() });
+      const data = await searchItems({ category, keyword: searchText.trim() });
       setItems(data);
     } catch (err) {
       console.error('Filter failed', err);
@@ -105,7 +108,7 @@ const HomeScreen: React.FC = () => {
         <TextInput
           style={styles.searchInput}
           placeholder="Search items..."
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.placeholder}
           value={searchText}
           onChangeText={handleSearch}
         />
@@ -120,7 +123,7 @@ const HomeScreen: React.FC = () => {
       {/* Items Grid */}
       {loading && !refreshing ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#e94560" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : items.length === 0 ? (
         <View style={styles.centered}>
@@ -138,7 +141,7 @@ const HomeScreen: React.FC = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#e94560"
+              tintColor={colors.primary}
             />
           }
         />
@@ -147,10 +150,12 @@ const HomeScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -163,21 +168,21 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.text,
   },
   subheading: {
     fontSize: 13,
-    color: '#a0a0b0',
+    color: colors.textMuted,
     marginTop: 2,
   },
   listButton: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
   },
   listButtonText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 13,
     fontWeight: 'bold',
   },
@@ -186,18 +191,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   searchInput: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 11,
     fontSize: 14,
-    color: '#fff',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: colors.border,
   },
   grid: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 120,
   },
   row: {
     justifyContent: 'space-between',
@@ -208,7 +213,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 15,
   },
 });

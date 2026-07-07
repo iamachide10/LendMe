@@ -100,6 +100,7 @@ public class MessageService {
             ? c.getParticipant2() : c.getParticipant1();
     dto.setOtherUserId(other.getId());
     dto.setOtherUserName(other.getName());
+    dto.setOtherUserPhoto(other.getProfilePhoto());
     dto.setCreatedAt(c.getCreatedAt());
 
     // Last message

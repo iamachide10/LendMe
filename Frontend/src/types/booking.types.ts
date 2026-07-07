@@ -13,6 +13,8 @@ export interface Booking {
   itemTitle: string;
   borrowerId: string;
   borrowerName: string;
+  ownerId: string;
+  ownerName: string;
   startDate: string;
   endDate: string;
   totalPrice: number;

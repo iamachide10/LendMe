@@ -14,8 +14,12 @@ export type HomeStackParamList = {
   BookingScreen: { itemId: string };
   BookingConfirm: { bookingId: string };
   PaymentSimulation: { bookingId: string; amount: number };
-  LeaveReview: { bookingId: string; revieweeId: string; itemId: string };
- ChatScreen: { conversationId: string; otherUserName: string; receiverId: string };
+ ChatScreen: {
+   conversationId: string;
+   otherUserName: string;
+   receiverId: string;
+   itemContext?: { itemId: string; title: string; price: number };
+ };
 };
 
 export type MainTabParamList = {
@@ -29,9 +33,15 @@ export type MainTabParamList = {
 export type BookingsStackParamList = {
   MyBookingsScreen: undefined;
   PaymentSimulation: { bookingId: string; amount: number };
+  LeaveReview: { bookingId: string; revieweeId: string; itemId: string };
 };
 
 export type InboxStackParamList = {
   InboxScreen: undefined;
- ChatScreen: { conversationId: string; otherUserName: string; receiverId: string };
+ ChatScreen: {
+   conversationId: string;
+   otherUserName: string;
+   receiverId: string;
+   itemContext?: { itemId: string; title: string; price: number };
+ };
 };

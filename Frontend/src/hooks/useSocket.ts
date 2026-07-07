@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Message } from '../types/message.types';
-import { getMessages } from '../api/messageApi';
+import { getMessages, sendMessageRest } from '../api/messageApi';
 
 const POLL_INTERVAL = 3000; // Poll every 3 seconds
 
@@ -44,7 +44,6 @@ export const useSocket = (
   }, [conversationId]);
 
   const sendMessage = async (receiverId: string, content: string) => {
-    const { sendMessageRest } = await import('../api/messageApi');
     return sendMessageRest(receiverId, content);
   };
 

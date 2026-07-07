@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation , useFocusEffect } from '@react-navigation/native';
@@ -15,6 +16,16 @@ import { HomeStackParamList } from '../../navigation/types';
 import { getConversations } from '../../api/messageApi';
 import { useMessageStore } from '../../store/messageStore';
 import { Conversation } from '../../types/message.types';
+import { useTheme, ThemeColors } from '../../theme';
+import { parseItemTag } from '../../utils/itemMessage';
+import { BASE_URL } from '../../utils/constants';
+
+const previewText = (lastMessage?: string): string => {
+  if (!lastMessage) return 'No messages yet';
+  const { itemTag, text } = parseItemTag(lastMessage);
+  if (!itemTag) return lastMessage;
+  return text.length > 0 ? text : `📦 ${itemTag.title}`;
+};
 
 type NavProp = NativeStackNavigationProp<HomeStackParamList, 'HomeScreen'>;
 
@@ -23,6 +34,8 @@ const InboxScreen: React.FC = () => {
   const { conversations, setConversations } = useMessageStore();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -55,15 +68,22 @@ const InboxScreen: React.FC = () => {
     otherUserName: item.otherUserName,
     receiverId: item.otherUserId,
   }
-    
+
 )
       }
     >
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>
-          {item.otherUserName.charAt(0).toUpperCase()}
-        </Text>
-      </View>
+      {item.otherUserPhoto ? (
+        <Image
+          source={{ uri: `${BASE_URL}${item.otherUserPhoto}` }}
+          style={styles.avatarImage}
+        />
+      ) : (
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>
+            {item.otherUserName.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.content}>
         <View style={styles.topRow}>
@@ -75,7 +95,7 @@ const InboxScreen: React.FC = () => {
           )}
         </View>
         <Text style={styles.lastMessage} numberOfLines={1}>
-          {item.lastMessage || 'No messages yet'}
+          {previewText(item.lastMessage)}
         </Text>
       </View>
     </TouchableOpacity>
@@ -89,7 +109,7 @@ const InboxScreen: React.FC = () => {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#e94560" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : conversations.length === 0 ? (
         <View style={styles.centered}>
@@ -108,7 +128,7 @@ const InboxScreen: React.FC = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#e94560"
+              tintColor={colors.primary}
             />
           }
         />
@@ -117,28 +137,29 @@ const InboxScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   headerTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 20,
     fontWeight: 'bold',
   },
   list: {
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -147,13 +168,20 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
+  avatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.card,
+    marginRight: 12,
+  },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -167,12 +195,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   name: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
   },
   unreadBadge: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -181,12 +209,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   unreadText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 11,
     fontWeight: 'bold',
   },
   lastMessage: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
   },
   centered: {
@@ -196,13 +224,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyText: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 8,
   },
   emptySubtext: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 20,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Image,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { ItemImage } from '../../types/item.types';
 import { BASE_URL } from '../../utils/constants';
+import { useTheme, ThemeColors } from '../../theme';
 
 interface Props {
   images: ItemImage[];
@@ -18,6 +19,8 @@ const { width } = Dimensions.get('window');
 
 const ItemImageCarousel: React.FC<Props> = ({ images }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   if (!images || images.length === 0) {
     return <View style={styles.placeholder} />;
@@ -58,7 +61,8 @@ const ItemImageCarousel: React.FC<Props> = ({ images }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   image: {
     width,
     height: 260,
@@ -67,7 +71,7 @@ const styles = StyleSheet.create({
   placeholder: {
     width,
     height: 260,
-    backgroundColor: '#0f3460',
+    backgroundColor: colors.inputBackground,
   },
   dots: {
     flexDirection: 'row',
@@ -79,10 +83,10 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#0f3460',
+    backgroundColor: colors.border,
   },
   dotActive: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     width: 18,
   },
 });

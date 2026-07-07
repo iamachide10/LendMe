@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../../navigation/types';
 import { getMessages, markConversationAsRead } from '../../api/messageApi';
@@ -20,17 +21,28 @@ import { useAuthStore } from '../../store/authStore';
 import { Message } from '../../types/message.types';
 import ChatBubble from '../../components/messaging/ChatBubble';
 import { useSocket } from '../../hooks/useSocket';
+import { useTheme, ThemeColors } from '../../theme';
+import { formatDateLabel, getDayKey } from '../../utils/dateFormat';
+import { buildItemTag } from '../../utils/itemMessage';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'ChatScreen'>;
 
+type ChatListItem =
+  | { type: 'date'; id: string; label: string }
+  | { type: 'message'; id: string; message: Message };
+
 const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { conversationId, otherUserName, receiverId } = route.params;
+  const { conversationId, otherUserName, receiverId, itemContext } = route.params;
   const { activeMessages, setActiveMessages, appendMessage } = useMessageStore();
   const user = useAuthStore(state => state.user);
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [pendingItem, setPendingItem] = useState(itemContext ?? null);
   const flatListRef = useRef<FlatList>(null);
 
   const lastMessageId = activeMessages.length > 0
@@ -73,7 +85,11 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleSend = async () => {
     if (!message.trim() || sending) return;
 
-    const content = message.trim();
+    // Attach the item summary to the first message sent from an item page
+    const itemPrefix = pendingItem
+      ? buildItemTag(pendingItem.itemId, pendingItem.title, pendingItem.price)
+      : '';
+    const content = itemPrefix + message.trim();
     setMessage('');
     setSending(true);
 
@@ -92,6 +108,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
 
     try {
       const saved = await sendMessage(receiverId, content);
+      setPendingItem(null);
       // Replace optimistic message with real one
       setActiveMessages(
         activeMessages
@@ -107,9 +124,46 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
-  const renderItem = ({ item }: { item: Message }) => (
-    <ChatBubble message={item} isOwn={item.senderId === user?.id} />
-  );
+  const handleItemPress = (itemId: string) => {
+    // ItemDetail lives in the Home tab's stack; navigate falls through to the tab navigator
+    (navigation as any).navigate('Home', {
+      screen: 'ItemDetail',
+      params: { itemId },
+    });
+  };
+
+  const listItems = useMemo(() => {
+    const items: ChatListItem[] = [];
+    let lastDayKey = '';
+    for (const msg of activeMessages) {
+      const dayKey = getDayKey(msg.sentAt);
+      if (dayKey !== lastDayKey) {
+        items.push({ type: 'date', id: `date-${dayKey}`, label: formatDateLabel(msg.sentAt) });
+        lastDayKey = dayKey;
+      }
+      items.push({ type: 'message', id: msg.id, message: msg });
+    }
+    return items;
+  }, [activeMessages]);
+
+  const renderItem = ({ item }: { item: ChatListItem }) => {
+    if (item.type === 'date') {
+      return (
+        <View style={styles.dateSeparator}>
+          <View style={styles.dateSeparatorPill}>
+            <Text style={styles.dateSeparatorText}>{item.label}</Text>
+          </View>
+        </View>
+      );
+    }
+    return (
+      <ChatBubble
+        message={item.message}
+        isOwn={item.message.senderId === user?.id}
+        onItemPress={handleItemPress}
+      />
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -132,23 +186,38 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={90}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 60 : 0}
       >
         {loading ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="large" color="#e94560" />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
           <FlatList
             ref={flatListRef}
-            data={activeMessages}
+            data={listItems}
             keyExtractor={item => item.id}
             renderItem={renderItem}
             contentContainerStyle={styles.messagesList}
+            keyboardShouldPersistTaps="handled"
             onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: true })
             }
+            onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
           />
+        )}
+
+        {/* Item context banner — attached to the next message sent */}
+        {pendingItem && (
+          <View style={styles.itemBanner}>
+            <Ionicons name="cube" size={16} color={colors.primary} />
+            <Text style={styles.itemBannerText} numberOfLines={1}>
+              Asking about: <Text style={styles.itemBannerTitle}>{pendingItem.title}</Text>
+            </Text>
+            <TouchableOpacity onPress={() => setPendingItem(null)}>
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Input */}
@@ -156,7 +225,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.placeholder}
             value={message}
             onChangeText={setMessage}
             multiline
@@ -170,9 +239,9 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
             disabled={!message.trim() || sending}
           >
             {sending ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={colors.primaryContrast} size="small" />
             ) : (
-              <Text style={styles.sendButtonText}>Send</Text>
+              <Ionicons name="arrow-up" size={20} color={colors.primaryContrast} />
             )}
           </TouchableOpacity>
         </View>
@@ -181,10 +250,11 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   flex: {
     flex: 1,
@@ -195,12 +265,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#0f3460',
+    borderBottomColor: colors.border,
   },
   backText: {
-    color: '#e94560',
+    color: colors.primary,
     fontSize: 14,
     width: 50,
   },
@@ -213,17 +283,17 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 16,
     fontWeight: 'bold',
   },
   headerName: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 15,
     fontWeight: 'bold',
   },
@@ -236,41 +306,70 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  itemBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: colors.card,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  itemBannerText: {
+    flex: 1,
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  itemBannerTitle: {
+    color: colors.text,
+    fontWeight: 'bold',
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#0f3460',
+    borderTopColor: colors.border,
     gap: 10,
   },
   input: {
     flex: 1,
-    backgroundColor: '#0f3460',
+    backgroundColor: colors.inputBackground,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#fff',
+    color: colors.text,
     maxHeight: 100,
   },
   sendButton: {
-    backgroundColor: '#e94560',
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    minWidth: 60,
+    backgroundColor: colors.primary,
+    borderRadius: 21,
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
     opacity: 0.4,
   },
-  sendButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+  dateSeparator: {
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  dateSeparatorPill: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  dateSeparatorText: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
 

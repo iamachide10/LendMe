@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import ItemCard from '../../components/items/ItemCard';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { MainTabParamList, HomeStackParamList } from '../../navigation/types';
+import { useTheme, ThemeColors } from '../../theme';
 
 
 
@@ -28,6 +29,8 @@ type NavProp = CompositeNavigationProp<BottomTabNavigationProp<MainTabParamList,
 const MyListingsScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const user = useAuthStore(state => state.user);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [listings, setListings] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +101,7 @@ const MyListingsScreen: React.FC = () => {
         <Text style={styles.headerTitle}>My Listings</Text>
         <TouchableOpacity
           style={styles.addButton}
-    
+
         onPress={() => navigation.navigate('Home', { screen: 'CreateListing' })}
         >
           <Text style={styles.addButtonText}>+ Add</Text>
@@ -107,7 +110,7 @@ const MyListingsScreen: React.FC = () => {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#e94560" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : listings.length === 0 ? (
         <View style={styles.centered}>
@@ -131,7 +134,7 @@ const MyListingsScreen: React.FC = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#e94560"
+              tintColor={colors.primary}
             />
           }
         />
@@ -140,10 +143,11 @@ const MyListingsScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -153,24 +157,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   headerTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 20,
     fontWeight: 'bold',
   },
   addButton: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
   },
   addButtonText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 13,
     fontWeight: 'bold',
   },
   grid: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 120,
   },
   row: {
     justifyContent: 'space-between',
@@ -181,16 +185,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   deleteButton: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#e94560',
+    borderColor: colors.error,
     borderRadius: 8,
     paddingVertical: 6,
     alignItems: 'center',
     marginTop: 4,
   },
   deleteButtonText: {
-    color: '#e94560',
+    color: colors.error,
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -200,18 +204,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 15,
     marginBottom: 20,
   },
   createButton: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 10,
   },
   createButtonText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 14,
     fontWeight: 'bold',
   },

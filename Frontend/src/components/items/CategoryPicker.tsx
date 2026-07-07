@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {ScrollView,TouchableOpacity,Text,StyleSheet,} from 'react-native';
 import { ItemCategory } from '../../types/item.types';
 import { ITEM_CATEGORIES } from '../../utils/constants';
+import { useTheme, ThemeColors } from '../../theme';
 interface Props {
   selected: ItemCategory | undefined;
   onSelect: (category: ItemCategory | undefined) => void;
 }
 
 const CategoryPicker: React.FC<Props> = ({ selected, onSelect }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
    <ScrollView
   horizontal
@@ -45,7 +49,8 @@ const CategoryPicker: React.FC<Props> = ({ selected, onSelect }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
  container: {
   paddingHorizontal: 16,
   paddingVertical: 12,
@@ -63,24 +68,24 @@ chip: {
   paddingVertical: 8,
   marginRight: 8,
   borderRadius: 20,
-  backgroundColor: '#16213e',
+  backgroundColor: colors.card,
   borderWidth: 1,
-  borderColor: '#0f3460',
+  borderColor: colors.border,
   minHeight: 36,
   justifyContent: 'center',
   flexShrink: 0,
 },
   chipActive: {
-    backgroundColor: '#e94560',
-    borderColor: '#e94560',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   chipText: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: '500',
   },
   chipTextActive: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontWeight: 'bold',
   },
 });

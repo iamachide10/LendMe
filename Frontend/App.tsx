@@ -1,14 +1,18 @@
 import 'text-encoding';
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Provider as PaperProvider } from 'react-native-paper';
 import AppNavigator from './src/navigation/AppNavigator';
+import { useTheme } from './src/theme';
 
-const App: React.FC = () => (
-  <PaperProvider>
-    <StatusBar style="light" backgroundColor="#1a1a2e" />
-    <AppNavigator />
-  </PaperProvider>
-);
+const App: React.FC = () => {
+  const { colors, isDark } = useTheme();
+
+  return (
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={colors.background} />
+      <AppNavigator />
+    </>
+  );
+};
 
 export default App;

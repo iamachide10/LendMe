@@ -120,6 +120,8 @@ public class BookingService {
         dto.setItemTitle(booking.getItem().getTitle());
         dto.setBorrowerId(booking.getBorrower().getId());
         dto.setBorrowerName(booking.getBorrower().getName());
+        dto.setOwnerId(booking.getItem().getOwner().getId());
+        dto.setOwnerName(booking.getItem().getOwner().getName());
         dto.setStartDate(booking.getStartDate());
         dto.setEndDate(booking.getEndDate());
         dto.setTotalPrice(booking.getTotalPrice());

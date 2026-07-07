@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Item } from '../../types/item.types';
 import { BASE_URL } from '../../utils/constants';
+import { useTheme, ThemeColors } from '../../theme';
 
 
 interface Props {
@@ -20,6 +21,9 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
 
 const ItemCard: React.FC<Props> = ({ item, onPress }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const primaryImage = item.images?.find(img => img.isPrimary)?.imageUrl;
 
   return (
@@ -51,10 +55,11 @@ const ItemCard: React.FC<Props> = ({ item, onPress }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   card: {
     width: CARD_WIDTH,
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 16,
@@ -67,35 +72,35 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     width: '100%',
     height: 130,
-    backgroundColor: '#0f3460',
+    backgroundColor: colors.inputBackground,
     justifyContent: 'center',
     alignItems: 'center',
   },
   imagePlaceholderText: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 12,
   },
   info: {
     padding: 10,
   },
   title: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 4,
   },
   category: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 11,
     marginBottom: 6,
   },
   price: {
-    color: '#e94560',
+    color: colors.primary,
     fontSize: 14,
     fontWeight: 'bold',
   },
   perDay: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: 'normal',
   },

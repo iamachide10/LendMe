@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { HomeStackParamList } from '../../navigation/types';
+import { BookingsStackParamList } from '../../navigation/types';
 import { submitReview } from '../../api/reviewApi';
+import { useTheme, ThemeColors } from '../../theme';
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'LeaveReview'>;
+type Props = NativeStackScreenProps<BookingsStackParamList, 'LeaveReview'>;
 
 const LeaveReviewScreen: React.FC<Props> = ({ route, navigation }) => {
   const { bookingId, revieweeId, itemId } = route.params;
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
   const [comment, setComment] = useState('');
@@ -38,7 +41,7 @@ const LeaveReviewScreen: React.FC<Props> = ({ route, navigation }) => {
         comment: comment.trim() || undefined,
       });
       Alert.alert('Review Submitted', 'Thank you for your feedback!', [
-        { text: 'OK', onPress: () => navigation.navigate('HomeScreen') },
+        { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (err: any) {
       Alert.alert(
@@ -109,7 +112,7 @@ const LeaveReviewScreen: React.FC<Props> = ({ route, navigation }) => {
         <TextInput
           style={styles.textArea}
           placeholder="Share your experience..."
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.placeholder}
           multiline
           numberOfLines={5}
           value={comment}
@@ -123,7 +126,7 @@ const LeaveReviewScreen: React.FC<Props> = ({ route, navigation }) => {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.primaryContrast} />
           ) : (
             <Text style={styles.submitButtonText}>Submit Review</Text>
           )}
@@ -133,10 +136,11 @@ const LeaveReviewScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.background,
   },
   scroll: {
     padding: 16,
@@ -149,11 +153,11 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   backText: {
-    color: '#e94560',
+    color: colors.primary,
     fontSize: 14,
   },
   headerTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -165,14 +169,14 @@ const styles = StyleSheet.create({
     fontSize: 60,
   },
   title: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
     textAlign: 'center',
     marginBottom: 32,
@@ -191,38 +195,38 @@ const styles = StyleSheet.create({
     fontSize: 44,
   },
   starActive: {
-    color: '#f0a500',
+    color: colors.warning,
   },
   starInactive: {
-    color: '#0f3460',
+    color: colors.border,
   },
   ratingLabel: {
-    color: '#f0a500',
+    color: colors.warning,
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 24,
   },
   label: {
-    color: '#a0a0b0',
+    color: colors.textMuted,
     fontSize: 13,
     marginBottom: 8,
   },
   textArea: {
-    backgroundColor: '#16213e',
+    backgroundColor: colors.card,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#fff',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: colors.border,
     height: 120,
     textAlignVertical: 'top',
     marginBottom: 24,
   },
   submitButton: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -231,7 +235,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#fff',
+    color: colors.primaryContrast,
     fontSize: 16,
     fontWeight: 'bold',
   },
