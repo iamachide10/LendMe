@@ -36,6 +36,7 @@ public class SecurityConfig {
                     "/api/items/search",
                     "/api/reviews/item/**",
                     "/api/reviews/user/**",
+                    "/api/payments/webhook",
                     "/ws/**",
                     "/uploads/**"
                 ).permitAll()

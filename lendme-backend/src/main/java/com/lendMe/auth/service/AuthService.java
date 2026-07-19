@@ -33,7 +33,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         String email = request.getEmail().trim().toLowerCase();
 
-        if (!email.endsWith("@knust.edu.gh")) {
+        if (!email.endsWith("@st.knust.edu.gh")) {
             throw new IllegalArgumentException("Only KNUST email addresses are allowed");
         }
 

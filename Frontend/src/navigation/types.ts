@@ -13,7 +13,7 @@ export type HomeStackParamList = {
   CreateListing: { itemId?: string } | undefined;
   BookingScreen: { itemId: string };
   BookingConfirm: { bookingId: string };
-  PaymentSimulation: { bookingId: string; amount: number };
+  Payment: { bookingId: string; amount: number };
  ChatScreen: {
    conversationId: string;
    otherUserName: string;
@@ -32,7 +32,7 @@ export type MainTabParamList = {
 
 export type BookingsStackParamList = {
   MyBookingsScreen: undefined;
-  PaymentSimulation: { bookingId: string; amount: number };
+  Payment: { bookingId: string; amount: number };
   LeaveReview: { bookingId: string; revieweeId: string; itemId: string };
 };
 

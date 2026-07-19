@@ -21,7 +21,7 @@ import BookingConfirmScreen from '../screens/booking/BookingConfirmScreen';
 import CreateListingScreen from '../screens/items/CreateListingScreen';
 import ChatScreen from '../screens/messaging/ChatScreen';
 import LeaveReviewScreen from '../screens/reviews/LeaveReviewScreen';
-import PaymentSimulationScreen from '../screens/booking/PaymentSimulationScreen';
+import PaymentScreen from '../screens/booking/PaymentScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
@@ -36,7 +36,7 @@ const HomeStackNavigator: React.FC = () => (
     <HomeStack.Screen name="BookingConfirm" component={BookingConfirmScreen} />
     <HomeStack.Screen name="CreateListing" component={CreateListingScreen} />
     <HomeStack.Screen name="ChatScreen" component={ChatScreen} />
-    <HomeStack.Screen name="PaymentSimulation" component={PaymentSimulationScreen} />
+    <HomeStack.Screen name="Payment" component={PaymentScreen} />
   </HomeStack.Navigator>
 );
 
@@ -50,7 +50,7 @@ const InboxStackNavigator: React.FC = () => (
 const BookingsStackNavigator: React.FC = () => (
   <BookingsStack.Navigator screenOptions={{ headerShown: false }}>
     <BookingsStack.Screen name="MyBookingsScreen" component={MyBookingsScreen} />
-    <BookingsStack.Screen name="PaymentSimulation" component={PaymentSimulationScreen} />
+    <BookingsStack.Screen name="Payment" component={PaymentScreen as any} />
     <BookingsStack.Screen name="LeaveReview" component={LeaveReviewScreen} />
   </BookingsStack.Navigator>
 );

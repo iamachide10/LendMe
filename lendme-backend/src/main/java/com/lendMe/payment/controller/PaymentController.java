@@ -1,5 +1,6 @@
 package com.lendMe.payment.controller;
 
+import com.lendMe.payment.dto.InitializePaymentResponse;
 import com.lendMe.payment.dto.PaymentRequest;
 import com.lendMe.payment.dto.PaymentResponse;
 import com.lendMe.payment.service.PaymentService;
@@ -16,6 +17,30 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentController {
 
     private final PaymentService paymentService;
+
+    @PostMapping("/initialize")
+    public ResponseEntity<InitializePaymentResponse> initializePayment(
+            @Valid @RequestBody PaymentRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                paymentService.initializePayment(request, userDetails.getUsername()));
+    }
+
+    @GetMapping("/verify/{reference}")
+    public ResponseEntity<PaymentResponse> verifyPayment(
+            @PathVariable String reference,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                paymentService.verifyPayment(reference, userDetails.getUsername()));
+    }
+
+    @PostMapping("/webhook")
+    public ResponseEntity<Void> paystackWebhook(
+            @RequestBody String rawBody,
+            @RequestHeader(value = "x-paystack-signature", required = false) String signature) {
+        paymentService.handleWebhook(rawBody, signature);
+        return ResponseEntity.ok().build();
+    }
 
     @PostMapping("/simulate")
     public ResponseEntity<PaymentResponse> simulatePayment(

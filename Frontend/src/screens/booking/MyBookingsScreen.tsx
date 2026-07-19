@@ -153,7 +153,7 @@ const renderBorrowerItem = ({ item }: { item: Booking }) => (
           <TouchableOpacity
             style={styles.approveButton}
             onPress={() =>
-              navigation.navigate('PaymentSimulation', {
+              navigation.navigate('Payment', {
                 bookingId: item.id,
                 amount: item.totalPrice,
               })

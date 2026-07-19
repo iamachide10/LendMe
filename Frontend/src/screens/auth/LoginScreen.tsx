@@ -68,7 +68,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.label}>KNUST Email</Text>
         <TextInput
           style={[styles.input, emailError ? styles.inputError : null]}
-          placeholder="you@knust.edu.gh"
+          placeholder="you@st.knust.edu.gh"
           placeholderTextColor={colors.placeholder}
           keyboardType="email-address"
           autoCapitalize="none"

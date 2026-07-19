@@ -1,5 +1,5 @@
 export const isKnustEmail = (email: string): boolean => {
-  return email.trim().toLowerCase().endsWith('@knust.edu.gh');
+  return email.trim().toLowerCase().endsWith('@st.knust.edu.gh');
 };
 
 export const isValidPassword = (password: string): boolean => {
@@ -8,7 +8,7 @@ export const isValidPassword = (password: string): boolean => {
 
 export const getEmailError = (email: string): string | null => {
   if (!email) return 'Email is required';
-  if (!isKnustEmail(email)) return 'Must be a valid @knust.edu.gh email';
+  if (!isKnustEmail(email)) return 'Must be a valid @st.knust.edu.gh email';
   return null;
 };
 
