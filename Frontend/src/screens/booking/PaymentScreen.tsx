@@ -33,7 +33,7 @@ const PaymentScreen: React.FC<Props> = ({ route, navigation }) => {
       referenceRef.current = data.reference;
       setCallbackUrl(data.callbackUrl);
       setCheckoutUrl(data.authorizationUrl);
-    } catch (err: any) {
+    }catch (err: any) {
       Alert.alert(
         'Payment Error',
         err?.response?.data?.message || 'Could not start payment'
