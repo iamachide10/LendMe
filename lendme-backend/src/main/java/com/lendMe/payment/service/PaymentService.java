@@ -24,6 +24,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
     private final PaystackClient paystackClient;
+    private final com.lendMe.payout.service.PayoutService payoutService;
 
     @Value("${paystack.callback-url}")
     private String callbackUrl;
@@ -105,7 +106,14 @@ public class PaymentService {
         }
 
         JsonNode payload = paystackClient.parseWebhookPayload(rawBody);
-        if (!"charge.success".equals(payload.path("event").asText())) {
+        String event = payload.path("event").asText();
+
+        if (event.startsWith("transfer.")) {
+            payoutService.handleTransferWebhook(event, payload.path("data"));
+            return;
+        }
+
+        if (!"charge.success".equals(event)) {
             return;
         }
 
@@ -124,6 +132,7 @@ public class PaymentService {
         booking.setStatus(BookingStatus.PAID);
         bookingRepository.save(booking);
         paymentRepository.save(payment);
+        payoutService.holdForBooking(booking);
     }
 
     @Transactional

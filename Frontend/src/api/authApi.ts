@@ -44,3 +44,24 @@ export const refreshTokens = async (refreshToken: string): Promise<AuthResponse>
 export const logoutUser = async (): Promise<void> => {
   await axiosInstance.post('/auth/logout');
 };
+
+
+
+
+
+
+// ╭─── Claude Code v2.1.201 ─────────────────────────────────────────────────────────────────────────────────────────────╮
+// │                                                 │ Tips for getting started                                           │
+// │                  Welcome back!                  │ Ask Claude to create a new app or clone a repository               │
+// │                                                 │────────────────────────────────────────────────────────────────── │
+// │                     ▐▛███▜▌                    │What's new                                                         │
+// │                    ▝▜█████▛▘                 │ Claude Sonnet 5 sessions no longer use the mid-conversation syste… │
+// │                      ▘▘ ▝▝                   │ Changed `AskUserQuestion` dialogs to no longer auto-continue by d… │
+// │                                                 │ Changed the "default" permission mode to "Manual" across the CLI,… │
+// │   Fable 5 with low effort · API Usage Billing   │ /release-notes for more                                            │
+// │              ~\Desktop\testClaude               │                                                                    │
+// ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+                                                                                                                                                                                                                       
+// ✻ Unable to connect to API (ConnectionRefused) · Retrying in 18s · attempt 6/10
+

@@ -11,7 +11,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { NativeStackScreenProps} from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { registerUser } from '../../api/authApi';
 import { saveTokens } from '../../utils/tokenStorage';

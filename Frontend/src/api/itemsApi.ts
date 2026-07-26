@@ -23,6 +23,11 @@ export const getItems = async (page = 0, size = 20): Promise<Item[]> => {
   return res.data.content;
 };
 
+export const getMyItems = async (): Promise<Item[]> => {
+  const res = await axiosInstance.get<Item[]>('/items/my');
+  return res.data;
+};
+
 export const getItemById = async (id: string): Promise<Item> => {
   const res = await axiosInstance.get(`/items/${id}`);
   return res.data;

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -16,10 +16,29 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/authStore';
 import { clearTokens } from '../../utils/tokenStorage';
 import { logoutUser } from '../../api/authApi';
-import { uploadProfilePhoto } from '../../api/userApi';
+import { uploadProfilePhoto, updateMomoDetails } from '../../api/userApi';
+import { getMyPayouts, retryPayout } from '../../api/payoutApi';
+import { Payout, PayoutStatus } from '../../types/payout.types';
+import { getMyItems } from '../../api/itemsApi';
+import { getMyBookings } from '../../api/bookingApi';
+import { getUserReviews } from '../../api/reviewApi';
 import axiosInstance from '../../api/axiosInstance';
 import { BASE_URL } from '../../utils/constants';
 import { useTheme, ThemeColors, ThemeMode } from '../../theme';
+
+const MOMO_PROVIDERS: { label: string; value: 'MTN' | 'VOD' | 'ATL' }[] = [
+  { label: 'MTN', value: 'MTN' },
+  { label: 'Telecel', value: 'VOD' },
+  { label: 'AT', value: 'ATL' },
+];
+
+const getPayoutStatusColor = (colors: ThemeColors): Record<PayoutStatus, string> => ({
+  HELD: colors.warning,
+  RELEASED: colors.primary,
+  PAID: colors.success,
+  FAILED: colors.error,
+  REFUNDED: colors.textMuted,
+});
 
 const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
   { label: 'Light', value: 'light' },
@@ -38,6 +57,87 @@ const ProfileScreen: React.FC = () => {
   const [name, setName] = useState(user?.name || '');
   const [loading, setLoading] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
+
+  const [momoNumber, setMomoNumber] = useState(user?.momoNumber || '');
+  const [momoProvider, setMomoProvider] = useState<'MTN' | 'VOD' | 'ATL'>(
+    (user?.momoProvider as 'MTN' | 'VOD' | 'ATL') || 'MTN'
+  );
+  const [momoSaving, setMomoSaving] = useState(false);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const payoutStatusColors = useMemo(() => getPayoutStatusColor(colors), [colors]);
+
+  const [stats, setStats] = useState<{
+    listings: number | null;
+    bookings: number | null;
+    rating: number | null;
+  }>({ listings: null, bookings: null, rating: null });
+
+  useEffect(() => {
+    getMyPayouts()
+      .then(setPayouts)
+      .catch(() => {});
+
+    getMyItems()
+      .then(items => setStats(prev => ({ ...prev, listings: items.length })))
+      .catch(() => {});
+
+    getMyBookings()
+      .then(bookings => setStats(prev => ({ ...prev, bookings: bookings.length })))
+      .catch(() => {});
+
+    if (user?.id) {
+      getUserReviews(user.id)
+        .then(reviews => {
+          const avg = reviews.length
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+            : null;
+          setStats(prev => ({ ...prev, rating: avg }));
+        })
+        .catch(() => {});
+    }
+  }, [user?.id]);
+
+  const handleSaveMomo = async () => {
+    if (!/^0\d{9}$/.test(momoNumber.trim())) {
+      Alert.alert('Error', 'Enter a valid 10-digit MoMo number starting with 0');
+      return;
+    }
+    setMomoSaving(true);
+    try {
+      const updated = await updateMomoDetails({
+        momoNumber: momoNumber.trim(),
+        momoProvider,
+      });
+      if (user && accessToken && refreshToken) {
+        setAuth(
+          {
+            ...user,
+            momoNumber: updated.momoNumber,
+            momoProvider: updated.momoProvider,
+          },
+          accessToken,
+          refreshToken
+        );
+      }
+      Alert.alert('Saved', 'Your mobile money details have been saved. Payouts will be sent to this wallet.');
+    } catch {
+      Alert.alert('Error', 'Failed to save mobile money details');
+    } finally {
+      setMomoSaving(false);
+    }
+  };
+
+  const handleRetryPayout = async (payoutId: string) => {
+    try {
+      const updated = await retryPayout(payoutId);
+      setPayouts(prev => prev.map(p => (p.id === payoutId ? updated : p)));
+      if (updated.status === 'FAILED') {
+        Alert.alert('Payout Failed', updated.failureReason || 'Transfer failed again');
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to retry payout');
+    }
+  };
 
   const handleChangePhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -218,20 +318,133 @@ const ProfileScreen: React.FC = () => {
         {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statValue}>
+              {stats.listings !== null ? stats.listings : '—'}
+            </Text>
             <Text style={styles.statLabel}>Listings</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statValue}>
+              {stats.bookings !== null ? stats.bookings : '—'}
+            </Text>
             <Text style={styles.statLabel}>Bookings</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>—</Text>
+            <Text style={styles.statValue}>
+              {stats.rating !== null ? `${stats.rating.toFixed(1)} ★` : '—'}
+            </Text>
             <Text style={styles.statLabel}>Rating</Text>
           </View>
         </View>
+
+        {/* Payout wallet */}
+        <Text style={styles.sectionLabel}>Payouts</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Mobile Money Number</Text>
+          <TextInput
+            style={styles.input}
+            value={momoNumber}
+            onChangeText={setMomoNumber}
+            placeholder="e.g. 0241234567"
+            placeholderTextColor={colors.placeholder}
+            keyboardType="phone-pad"
+            maxLength={10}
+          />
+          <Text style={[styles.cardLabel, { marginTop: 12 }]}>Network</Text>
+          <View style={styles.segmentTrack}>
+            {MOMO_PROVIDERS.map(option => {
+              const selected = momoProvider === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.segment, selected && styles.segmentSelected]}
+                  onPress={() => setMomoProvider(option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      selected && styles.segmentTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TouchableOpacity
+            style={[styles.saveButton, { marginTop: 16, marginBottom: 0 }, momoSaving ? styles.saveButtonDisabled : null]}
+            onPress={handleSaveMomo}
+            disabled={momoSaving}
+          >
+            {momoSaving ? (
+              <ActivityIndicator color={colors.primaryContrast} />
+            ) : (
+              <Text style={styles.saveButtonText}>
+                {user?.momoNumber ? 'Update Wallet' : 'Save Wallet'}
+              </Text>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.momoHint}>
+            Money you earn from lending is sent to this wallet when a rental is completed.
+          </Text>
+        </View>
+
+        {/* Earnings */}
+        {payouts.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>Earnings</Text>
+            <View style={styles.card}>
+              {payouts.map((payout, index) => (
+                <View key={payout.id}>
+                  {index > 0 && <View style={styles.divider} />}
+                  <View style={styles.payoutRow}>
+                    <View style={styles.payoutInfo}>
+                      <Text style={styles.cardValue} numberOfLines={1}>
+                        {payout.itemTitle}
+                      </Text>
+                      <Text style={styles.payoutAmount}>
+                        GH₵ {payout.netAmount.toFixed(2)}
+                      </Text>
+                      {payout.status === 'FAILED' && payout.failureReason ? (
+                        <Text style={styles.payoutError} numberOfLines={2}>
+                          {payout.failureReason}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <View style={styles.payoutRight}>
+                      <View
+                        style={[
+                          styles.payoutBadge,
+                          { backgroundColor: payoutStatusColors[payout.status] + '22' },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.payoutBadgeText,
+                            { color: payoutStatusColors[payout.status] },
+                          ]}
+                        >
+                          {payout.status}
+                        </Text>
+                      </View>
+                      {payout.status === 'FAILED' && (
+                        <TouchableOpacity
+                          style={styles.retryButton}
+                          onPress={() => handleRetryPayout(payout.id)}
+                        >
+                          <Text style={styles.retryButtonText}>Retry</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
 
         {/* Settings */}
         <Text style={styles.sectionLabel}>Settings</Text>
@@ -455,6 +668,57 @@ const makeStyles = (colors: ThemeColors) =>
     },
     segmentTextSelected: {
       color: colors.primaryContrast,
+    },
+    momoHint: {
+      color: colors.textMuted,
+      fontSize: 12,
+      marginTop: 10,
+      lineHeight: 17,
+    },
+    payoutRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    payoutInfo: {
+      flex: 1,
+      marginRight: 10,
+    },
+    payoutAmount: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: 'bold',
+      marginTop: 2,
+    },
+    payoutError: {
+      color: colors.error,
+      fontSize: 11,
+      marginTop: 4,
+    },
+    payoutRight: {
+      alignItems: 'flex-end',
+      gap: 6,
+    },
+    payoutBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    payoutBadgeText: {
+      fontSize: 11,
+      fontWeight: 'bold',
+    },
+    retryButton: {
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+    },
+    retryButtonText: {
+      color: colors.primary,
+      fontSize: 12,
+      fontWeight: 'bold',
     },
     logoutButton: {
       borderWidth: 1,

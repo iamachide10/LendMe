@@ -13,5 +13,7 @@ public class UserProfileDto {
     private String email;
     private String profilePhoto;
     private Boolean isVerified;
+    private String momoNumber;
+    private String momoProvider;
     private LocalDateTime createdAt;
 }

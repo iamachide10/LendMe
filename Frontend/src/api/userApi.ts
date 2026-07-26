@@ -1,5 +1,12 @@
 import axiosInstance from './axiosInstance';
-import { User } from '../types/user.types';
+import { MomoDetailsRequest, User } from '../types/user.types';
+
+export const updateMomoDetails = async (
+  data: MomoDetailsRequest
+): Promise<User> => {
+  const res = await axiosInstance.put('/users/me/momo', data);
+  return res.data;
+};
 
 export const uploadProfilePhoto = async (uri: string): Promise<User> => {
   const formData = new FormData();

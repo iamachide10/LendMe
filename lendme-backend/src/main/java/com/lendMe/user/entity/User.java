@@ -36,6 +36,15 @@ public class User {
     @Column(nullable = false)
     private Boolean isVerified = false;
 
+    @Column(length = 20)
+    private String momoNumber;
+
+    @Column(length = 10)
+    private String momoProvider;
+
+    @Column(length = 100)
+    private String paystackRecipientCode;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

@@ -32,6 +32,14 @@ public class UserController {
                 userService.updateProfile(userDetails.getUsername(), request));
     }
 
+    @PutMapping("/me/momo")
+    public ResponseEntity<UserProfileDto> updateMomoDetails(
+            @Valid @RequestBody com.lendMe.user.dto.MomoDetailsRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                userService.updateMomoDetails(userDetails.getUsername(), request));
+    }
+
     @PostMapping("/me/photo")
     public ResponseEntity<UserProfileDto> uploadPhoto(
             @RequestParam("file") MultipartFile file,

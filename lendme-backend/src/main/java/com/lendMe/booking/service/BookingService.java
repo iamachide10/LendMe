@@ -25,6 +25,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final com.lendMe.payout.service.PayoutService payoutService;
 
     @Transactional
     public BookingResponseDto createBooking(CreateBookingRequest request, String email) {
@@ -91,8 +92,16 @@ public class BookingService {
             throw new RuntimeException("You are not the owner of this item");
         }
 
+        BookingStatus previous = booking.getStatus();
         booking.setStatus(request.getStatus());
-        return toDto(bookingRepository.save(booking));
+        BookingResponseDto dto = toDto(bookingRepository.save(booking));
+
+        // Rental finished: release the held payment to the lender's MoMo wallet
+        if (request.getStatus() == BookingStatus.COMPLETED
+                && (previous == BookingStatus.PAID || previous == BookingStatus.ACTIVE)) {
+            payoutService.releaseForBooking(booking.getId());
+        }
+        return dto;
     }
 
     @Transactional

@@ -20,6 +20,23 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final com.lendMe.payment.service.PaystackClient paystackClient;
+
+    @Transactional
+    public UserProfileDto updateMomoDetails(String email,
+                                            com.lendMe.user.dto.MomoDetailsRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Register the wallet with Paystack so we can transfer to it later
+        String recipientCode = paystackClient.createTransferRecipient(
+                user.getName(), request.getMomoNumber(), request.getMomoProvider());
+
+        user.setMomoNumber(request.getMomoNumber());
+        user.setMomoProvider(request.getMomoProvider());
+        user.setPaystackRecipientCode(recipientCode);
+        return toDto(userRepository.save(user));
+    }
 
     public UserProfileDto getProfile(String email) {
         User user = userRepository.findByEmail(email)
@@ -69,6 +86,8 @@ public class UserService {
         dto.setEmail(user.getEmail());
         dto.setProfilePhoto(user.getProfilePhoto());
         dto.setIsVerified(user.getIsVerified());
+        dto.setMomoNumber(user.getMomoNumber());
+        dto.setMomoProvider(user.getMomoProvider());
         dto.setCreatedAt(user.getCreatedAt());
         return dto;
     }
